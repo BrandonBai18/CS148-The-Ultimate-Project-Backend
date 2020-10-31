@@ -1,0 +1,13 @@
+<body>
+    Here you can view posts </br>
+    {% for post in post_database %}
+        {{ post.title }}</br>
+        {{ post.text }}</br>
+    {% endfor %} 
+    <a href="/mainpage">Main</a></br>
+    <a href="/posts">Posts</a></br>
+    <a href="/write">Write a Post</a></br>
+    <a href="/register">Register</a></br>
+    <a href="/login">Login</a></br>
+    <a href="/logout">Logout</a></br>
+</body>
