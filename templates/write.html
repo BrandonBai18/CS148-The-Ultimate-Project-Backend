@@ -1,16 +1,21 @@
-<html>
-    <body>
-        here is the write a post page
-        <form action="/write" method = "POST">
-            <p>Title <input type = "text" name = "Title" id = "Title" /></p>
-            <p>Text <input type = "text" name = "Text" id = "Text"/></p>
-            <p><input type = "submit" value = "submit" /></p>
-        </form>
-        <a href="/mainpage">Main</a></br>
-        <a href="/posts">Posts</a></br>
-        <a href="/write">Write a Post</a></br>
-        <a href="/register">Register</a></br>
-        <a href="/login">Login</a></br>
-        <a href="/logout">Logout</a></br>
-    </body>
-</html>
+<div class = "ui main text container segment"><div class = "ui huge header">New Posts</div>
+    <form class = "ui form" action = "/write", method = "POST">
+        <div class = "field">
+            <label>Title</label>
+            <input type = "text" placegholder = "title" name = "Title">
+        </div>
+
+        <div class = "field">
+            <label>Text</label>
+            <textarea name = "Text" required></textarea>
+        </div>
+
+        <div class = "field">
+            <label>Image</label>
+            <input type = "text" placegholder = "Image" name = "Image">
+        </div>
+
+        <input class="ui violet basic button" type = "submit" value="submit">
+    </form>
+    <a href="/mainpage">Main</a></br>
+</div>

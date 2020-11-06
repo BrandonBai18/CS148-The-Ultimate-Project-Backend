@@ -19,7 +19,7 @@ DEBUG=True
 uri = "mongodb://0.0.0.0:27017"
 client = pymongo.MongoClient([uri])
 database = client['hospital_post']
-collection = database['try_posts']
+collection = database['image_author_posts']
 app.config['MONGO_DBNAME'] = 'tst_app'
 app.config['MONGO_URI'] = 'mongodb://0.0.0.0:27017/tst_app'
 mongo = PyMongo(app)
@@ -119,17 +119,7 @@ def index():
 @app.route('/posts/', methods=['GET','POST'])
 def posts():
     if request.method == 'GET':
-        post_a = {
-                "title": "Here is the a post",
-                "content": "The content of the a post"
-        }
-        post_b = {
-                "title": "Here is the b post",
-                "content": "The content of the b post"
-        }
-        #posts = [post_a, post_b]
         posts = collection.find({})
-
         return render_template('posts.html', post_database = posts)
 
 @app.route('/mainpage/', methods=['GET','POST'])
@@ -149,9 +139,16 @@ def write():
         if not session.get("username") is None:
             Title = request.form.get("Title")
             Text = request.form.get("Text")
+            Image = request.form.get("Image")
+
+            users = mongo.db.users
+            login_user = users.find_one({'username' : session.get("username")})
+            login_username = session.get('username')
             new_post = {
                 "title": Title,
-                "text": Text
+                "text": Text,
+                "image": Image,
+                "author": login_username
             }
             collection.insert(new_post)
             return redirect('/posts')
@@ -201,6 +198,25 @@ def logout():
     if not session.get("username") is None:
         session['username'] = None
     return redirect('/mainpage')
+
+@app.route("/id/<username>")
+def other_user_page(username):
+    posts = collection.find({"author": username})
+    return render_template('other_user_page.html', username = username, post_database = posts)
+
+@app.route("/id_profile/<username>")
+def login_user_page(username):
+    if not session.get("username") is None:
+        users = mongo.db.users
+        login_user = users.find_one({'username' : session.get('username')})
+        posts = collection.find({"author": login_user['username']})
+        return render_template('login_user_page.html', username = login_user['username'], id = login_user['_id'], post_database = posts)
+
+
+@app.route("/viewmore")
+def viewmore():
+    return render_template('viewmore.html')
+
 
 def main():
     '''The threaded option for concurrent accesses, 0.0.0.0 host says listen to all network interfaces (leaving this off changes this to local (same host) only access, port is the port listened on -- this must be open in your firewall or mapped out if within a Docker container. In Heroku, the heroku runtime sets this value via the PORT environment variable (you are not allowed to hard code it) so set it from this variable and give a default value (8118) for when we execute locally.  Python will tell us if the port is in use.  Start by using a value > 8000 as these are likely to be available.

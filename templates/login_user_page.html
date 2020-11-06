@@ -1,0 +1,21 @@
+<h>
+    This page can be only viewed by youself
+</h>
+
+<h>your username: </h>
+{{username}}</br>
+<h>your _id: </h>
+{{id}}</br>
+<h>Gender: </h></br>
+<h>Description</h></br>
+<h>Posts: </h></br>
+{% for post in post_database %}
+<div>
+    <h2>{{ post.title }}</h2>
+    <span>>{{ post.text }}</span></br>
+    <img src = "{{ post.image }}" ></br>
+    <a href="/viewmore">View More</a></br>
+</div></br>
+{% endfor %} 
+
+<a href="/mainpage">Main</a></br>

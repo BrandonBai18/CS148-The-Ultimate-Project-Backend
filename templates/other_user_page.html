@@ -1,18 +1,16 @@
-<div class = "ui main text container segment">
-    <h1>This is the viewpost page</h1>
+<html>
+    <body>
+        <h>This is the profile page of </h>
+        {{username}}
+    </body>
     {% for post in post_database %}
         <div>
-            
             <h2>{{ post.title }}</h2>
             <span>>{{ post.text }}</span></br>
             <img src = "{{ post.image }}" ></br>
             <a href="/viewmore">View More</a></br>
-            <a href="/id/{{post.author}}">{{post.author}}</a></br>
-        </div>
+        </div></br>
     {% endfor %} 
-    </br></br></br></br></br></br>
-
     <a href="/mainpage">Main</a></br>
-</div>
-
+    </html>
 
