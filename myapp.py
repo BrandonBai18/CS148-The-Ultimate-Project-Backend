@@ -106,7 +106,7 @@ def postit():
 # Set the base route to be the react index.html
 @app.route('/')
 def index():
-    if session['username'] == None:
+    if session.get('username') == None:
         return 'no one sign in'
     if 'username' in session:
         return 'You are logged in as ' + session['username']
