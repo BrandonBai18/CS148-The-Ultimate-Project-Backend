@@ -128,7 +128,7 @@ def posts():
 @app.route('/mainpage/', methods=['GET','POST'])
 def mainpage():
     if request.method == 'GET':
-        return render_template('mainpage.html', username = session['username'])
+        return render_template('mainpage.html', username = session.get('username'))
 
 @app.route('/write/', methods=['GET','POST'])
 def write():
