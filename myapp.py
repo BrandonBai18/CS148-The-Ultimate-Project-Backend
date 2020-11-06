@@ -106,11 +106,14 @@ def postit():
 # Set the base route to be the react index.html
 @app.route('/')
 def index():
+    return redirect('/mainpage')
+    """
     if session.get('username') == None:
         return 'no one sign in'
     if 'username' in session:
         return 'You are logged in as ' + session['username']
     return "<h1>Welcome to our server !!</h1>",200
+    """
 
     #use this instead if linking to a raact app on the same server
     #make sure and update the app = Flask(...) line above for the same
