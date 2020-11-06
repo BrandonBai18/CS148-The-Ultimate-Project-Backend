@@ -11,3 +11,4 @@ Flask-PyMongo==2.3.0
 flask-mongoengine==0.9.5
 Flask-User==1.0.2.2
 Flask-Login==0.5.0
+email-validator==1.1.2
