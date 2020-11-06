@@ -202,7 +202,7 @@ def logout():
 @app.route("/id/<username>")
 def other_user_page(username):
     posts = collection.find({"author": username})
-    return render_template('other_user_page.html', username = username, post_database = posts)
+    return render_template('other_user_page.html', username = username, post_database =posts)
 
 @app.route("/id_profile/<username>")
 def login_user_page(username):
