@@ -13,10 +13,14 @@ import bcrypt
 from flask_mongoengine import MongoEngine
 from flask_user import login_required, UserManager, UserMixin
 from flask_login import logout_user
-
-
+from flask_session import Session
+#flask-session-0.3.2
 cloud_url = "mongodb+srv://Ab990618:Ab990618@cluster0.ztgu2.mongodb.net/hospital_post?retryWrites=true&w=majority"
 app = Flask(__name__)
+app.config.from_object(__name__)
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SECRET_KEY'] = 'hospital'
+Session(app)
 DEBUG=True
 #uri = "mongodb://0.0.0.0:27017"
 uri = cloud_url
@@ -229,11 +233,15 @@ def viewmore():
 def main():
     '''The threaded option for concurrent accesses, 0.0.0.0 host says listen to all network interfaces (leaving this off changes this to local (same host) only access, port is the port listened on -- this must be open in your firewall or mapped out if within a Docker container. In Heroku, the heroku runtime sets this value via the PORT environment variable (you are not allowed to hard code it) so set it from this variable and give a default value (8118) for when we execute locally.  Python will tell us if the port is in use.  Start by using a value > 8000 as these are likely to be available.
     '''
+    app.config['SESSION_TYPE'] = 'filesystem'
+    app.config['SECRET_KEY'] = 'hospital'
     app.secret_key = 'hospital'
+    #Session(app)
+
     localport = int(os.getenv("PORT", 8118))
     app.run(threaded=True, host='0.0.0.0', port=localport)
     #app.run(threaded=True, port=localport)
-    
+
 if __name__ == '__main__':
     main()
 
