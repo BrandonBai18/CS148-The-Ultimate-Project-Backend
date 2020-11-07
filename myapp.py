@@ -14,14 +14,19 @@ from flask_mongoengine import MongoEngine
 from flask_user import login_required, UserManager, UserMixin
 from flask_login import logout_user
 
+
+cloud_url = "mongodb+srv://Ab990618:Ab990618@cluster0.ztgu2.mongodb.net/hospital_post?retryWrites=true&w=majority"
 app = Flask(__name__)
 DEBUG=True
-uri = "mongodb://0.0.0.0:27017"
+#uri = "mongodb://0.0.0.0:27017"
+uri = cloud_url
 client = pymongo.MongoClient([uri])
 database = client['hospital_post']
 collection = database['image_author_posts']
 app.config['MONGO_DBNAME'] = 'tst_app'
-app.config['MONGO_URI'] = 'mongodb://0.0.0.0:27017/tst_app'
+
+#app.config['MONGO_URI'] = 'mongodb://0.0.0.0:27017/tst_app'
+app.config['MONGO_URI'] = 'mongodb+srv://Ab990618:Ab990618@cluster0.ztgu2.mongodb.net/tst_app?retryWrites=true&w=majority'
 mongo = PyMongo(app)
 
 
