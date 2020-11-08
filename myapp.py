@@ -135,6 +135,21 @@ def posts():
         posts = collection.find({})
         return render_template('posts.html', post_database = posts)
 
+
+@app.route('/api/posts', methods = ['GET','POST'])
+def api_posts():
+    if request.method == 'GET':
+        posts = collection.find({})
+        response = {}
+        #for post in posts:
+        #    new_num = "post_" + str(num)
+        #    response[new_num] = post
+        #    num = num + 1
+        response["posts"] = posts
+        page_sanitized = json.loads(json_util.dumps(response))
+        return page_sanitized
+
+
 @app.route('/mainpage/', methods=['GET','POST'])
 def mainpage():
     if request.method == 'GET':
@@ -232,13 +247,36 @@ def other_user_page(username):
     posts = collection.find({"author": username})
     return render_template('other_user_page.html', username = username, post_database =posts)
 
-@app.route("/id_profile/<username>")
-def login_user_page(username):
-    if not session.get("username") is None:
-        users = mongo.db.users
-        login_user = users.find_one({'username' : session.get('username')})
-        posts = collection.find({"author": login_user['username']})
-        return render_template('login_user_page.html', username = login_user['username'], id = login_user['_id'], post_database = posts)
+@app.route("/api/id/<username>")
+def api_other_user_page(username):
+    posts = collection.find({"author": username})
+    response = {}
+    #for post in posts:
+    #    new_num = "post_" + str(num)
+    #    response[new_num] = post
+    #    num = num + 1
+    response["posts"] = posts
+    page_sanitized = json.loads(json_util.dumps(response))
+    return page_sanitized
+    
+
+@app.route("/api/id_profile/<username>")
+def api_login_user_page(username):
+    #if not session.get("username") is None:
+    users = mongo.db.users
+    #login_user = users.find_one({'username' : session.get('username')})
+    login_user = users.find_one({'username' : username})
+    posts = collection.find({"author": login_user['username']})
+    response = {}
+    #for post in posts:
+    #    new_num = "post_" + str(num)
+    #    response[new_num] = post
+    #    num = num + 1
+    response["posts"] = posts
+    response["profile"] = login_user
+    page_sanitized = json.loads(json_util.dumps(response))
+    return page_sanitized
+        
 
 
 @app.route("/viewmore")
@@ -246,19 +284,7 @@ def viewmore():
     return render_template('viewmore.html')
 
 
-@app.route('/api/posts', methods = ['GET','POST'])
-def api_posts():
-    if request.method == 'GET':
-        posts = collection.find({})
-        response = {}
-        num = 0
-        #for post in posts:
-        #    new_num = "post_" + str(num)
-        #    response[new_num] = post
-        #    num = num + 1
-        response["posts"] = posts
-        page_sanitized = json.loads(json_util.dumps(response))
-        return page_sanitized
+
 
 @app.route('/api/write/', methods=['GET','POST'])
 def api_write():
