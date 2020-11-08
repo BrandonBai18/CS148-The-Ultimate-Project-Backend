@@ -14,6 +14,7 @@ from flask_mongoengine import MongoEngine
 from flask_user import login_required, UserManager, UserMixin
 from flask_login import logout_user
 from flask_session import Session
+from bson import json_util, ObjectId
 #flask-session-0.3.2
 cloud_url = "mongodb+srv://Ab990618:Ab990618@cluster0.ztgu2.mongodb.net/hospital_post?retryWrites=true&w=majority"
 app = Flask(__name__)
@@ -233,11 +234,15 @@ def viewmore():
 @app.route('/api', methods = ['GET','POST'])
 def api():
     if request.method == 'GET':
-        return {
-            'userId': 33,
-            'title': 'HHHHHH',
-            'completed': False
-        }
+        posts = collection.find({})
+        response = {}
+        num = 0
+        for post in posts:
+            new_num = "post_" + str(num)
+            response[new_num] = post
+            num = num + 1
+        page_sanitized = json.loads(json_util.dumps(response))
+        return page_sanitized
 
 
 
