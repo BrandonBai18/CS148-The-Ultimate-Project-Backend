@@ -189,6 +189,21 @@ def register():
 
     return render_template('register.html')
 
+@app.route('/api/register/', methods=['GET','POST'])
+def api_register():
+    if request.method == 'POST':
+        users = mongo.db.users
+        existing_user = users.find_one({'username' : request.form['username']})
+
+        if existing_user is None:
+            hashpass = bcrypt.hashpw(request.form['password'].encode('utf-8'), bcrypt.gensalt())
+            users.insert({'username' : request.form['username'], 'password' : hashpass})
+            session['username'] = request.form['username']
+            return redirect('/mainpage')
+        
+        return 'That username already exists!'
+
+    return render_template('register.html')
 
 @app.route('/login/', methods=['GET','POST'])
 def login():
@@ -231,20 +246,41 @@ def viewmore():
     return render_template('viewmore.html')
 
 
-@app.route('/api', methods = ['GET','POST'])
-def api():
+@app.route('/api/posts', methods = ['GET','POST'])
+def api_posts():
     if request.method == 'GET':
         posts = collection.find({})
         response = {}
         num = 0
-        for post in posts:
-            new_num = "post_" + str(num)
-            response[new_num] = post
-            num = num + 1
+        #for post in posts:
+        #    new_num = "post_" + str(num)
+        #    response[new_num] = post
+        #    num = num + 1
+        response["posts"] = posts
         page_sanitized = json.loads(json_util.dumps(response))
         return page_sanitized
 
+@app.route('/api/write/', methods=['GET','POST'])
+def api_write():
+    if request.method == 'POST':
+        Title = request.form.get("Title")
+        Text = request.form.get("Text")
+        Image = request.form.get("Image")
 
+        users = mongo.db.users
+        login_user = users.find_one({'username' : session.get("username")})
+        login_username = session.get('username')
+        new_post = {
+            "title": Title,
+            "text": Text,
+            "image": Image,
+            "author": login_username
+        }
+        collection.insert(new_post)
+        return redirect('/posts')
+    else:
+        return "U need to login first"
+    return "U need to login first"
 
 
 
