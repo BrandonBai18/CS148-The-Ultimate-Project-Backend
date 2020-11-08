@@ -28,7 +28,7 @@ client = pymongo.MongoClient([uri])
 database = client['hospital_post']
 collection = database['image_author_posts']
 app.config['MONGO_DBNAME'] = 'tst_app'
-
+   
 #app.config['MONGO_URI'] = 'mongodb://0.0.0.0:27017/tst_app'
 app.config['MONGO_URI'] = 'mongodb+srv://Ab990618:Ab990618@cluster0.ztgu2.mongodb.net/tst_app?retryWrites=true&w=majority'
 mongo = PyMongo(app)
@@ -230,6 +230,19 @@ def viewmore():
     return render_template('viewmore.html')
 
 
+@app.route('/api', methods = ['GET','POST'])
+def api():
+    if request.method == 'GET':
+        return {
+            'userId': 33,
+            'title': 'HHHHHH',
+            'completed': False
+        }
+
+
+
+
+
 def main():
     '''The threaded option for concurrent accesses, 0.0.0.0 host says listen to all network interfaces (leaving this off changes this to local (same host) only access, port is the port listened on -- this must be open in your firewall or mapped out if within a Docker container. In Heroku, the heroku runtime sets this value via the PORT environment variable (you are not allowed to hard code it) so set it from this variable and give a default value (8118) for when we execute locally.  Python will tell us if the port is in use.  Start by using a value > 8000 as these are likely to be available.
     '''
@@ -245,3 +258,4 @@ def main():
 if __name__ == '__main__':
     main()
 
+ 
