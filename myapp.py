@@ -192,12 +192,14 @@ def write():
 @app.route('/api/write/', methods=['GET','POST'])
 def api_write():
     if request.method == 'POST':
-        Title = request.form.get("Title")
-        Text = request.form.get("Text")
-        Image = request.form.get("Image")
+        response_json = request.get_json(force = True)
+        #Title = request.form.get("Title")
+        Title = response_json['title']
+        #Text = request.form.get("Text")
+        Text = response_json['text']
+        #Image = request.form.get("Image")
+        Image = response_json['image']
 
-        users = mongo.db.users
-        login_user = users.find_one({'username' : session.get("username")})
         login_username = session.get('username')
         new_post = {
             "title": Title,
@@ -206,10 +208,9 @@ def api_write():
             "author": login_username
         }
         collection.insert(new_post)
-        return redirect('/posts')
+        return "True"
     else:
-        return "U need to login first"
-    return "U need to login first"
+        return "False"
 
 @app.route('/register/', methods=['GET','POST'])
 def register():
@@ -272,8 +273,9 @@ def api_login():
         if login_user:
             if bcrypt.hashpw(response_json['password'].encode('utf-8'), login_user['password']) == login_user['password']:
                 session['username'] = response_json['username']
+                print('he is right')
                 return "True"
-
+        print('he is wrong')
         return "False"
     
 
