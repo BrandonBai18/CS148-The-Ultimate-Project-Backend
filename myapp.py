@@ -260,8 +260,8 @@ def login():
     
     return render_template('login.html')
 
-@app.route('/aoi/login/', methods=['GET','POST'])
-def login():
+@app.route('/api/login/', methods=['GET','POST'])
+def api_login():
 
     if request.method == "POST":
         users = mongo.db.users
