@@ -15,6 +15,8 @@ from flask_user import login_required, UserManager, UserMixin
 from flask_login import logout_user
 from flask_session import Session
 from bson import json_util, ObjectId
+from bson.objectid import ObjectId
+import datetime
 #flask-session-0.3.2
 cloud_url = "mongodb+srv://Ab990618:Ab990618@cluster0.ztgu2.mongodb.net/hospital_post?retryWrites=true&w=majority"
 app = Flask(__name__)
@@ -27,11 +29,11 @@ DEBUG=True
 uri = cloud_url
 client = pymongo.MongoClient([uri])
 database = client['hospital_post']
-collection = database['image_author_posts']
-app.config['MONGO_DBNAME'] = 'tst_app'
-   
-#app.config['MONGO_URI'] = 'mongodb://0.0.0.0:27017/tst_app'
-app.config['MONGO_URI'] = 'mongodb+srv://Ab990618:Ab990618@cluster0.ztgu2.mongodb.net/tst_app?retryWrites=true&w=majority'
+collection = database['final_post_db_1']
+app.config['MONGO_DBNAME'] = 'user_database'
+
+#app.config['MONGO_URI'] = 'mongodb://0.0.0.0:27017/user_database'
+app.config['MONGO_URI'] = 'mongodb+srv://Ab990618:Ab990618@cluster0.ztgu2.mongodb.net/user_database?retryWrites=true&w=majority'
 mongo = PyMongo(app)
 
 
@@ -129,6 +131,13 @@ def index():
     #make sure and update the app = Flask(...) line above for the same
     #return app.send_static_file('index.html') 
 
+
+
+@app.route('/mainpage/', methods=['GET','POST'])
+def mainpage():
+    if request.method == 'GET':
+        return render_template('mainpage.html', username = session.get('username'))
+
 @app.route('/posts/', methods=['GET','POST'])
 def posts():
     if request.method == 'GET':
@@ -146,14 +155,8 @@ def api_posts():
         #    response[new_num] = post
         #    num = num + 1
         response["posts"] = posts
-        page_sanitized = json.loads(json_util.dumps(response))
-        return page_sanitized
-
-
-@app.route('/mainpage/', methods=['GET','POST'])
-def mainpage():
-    if request.method == 'GET':
-        return render_template('mainpage.html', username = session.get('username'))
+        response_json = json.loads(json_util.dumps(response))
+        return response_json
 
 @app.route('/write/', methods=['GET','POST'])
 def write():
@@ -168,7 +171,8 @@ def write():
             Title = request.form.get("Title")
             Text = request.form.get("Text")
             Image = request.form.get("Image")
-
+            time_now = datetime.datetime.now()
+            print(time_now)
             users = mongo.db.users
             login_user = users.find_one({'username' : session.get("username")})
             login_username = session.get('username')
@@ -176,7 +180,8 @@ def write():
                 "title": Title,
                 "text": Text,
                 "image": Image,
-                "author": login_username
+                "author": login_username,
+                "time": time_now
             }
             collection.insert(new_post)
             return redirect('/posts')
@@ -184,8 +189,27 @@ def write():
             return "U need to login first"
     return "U need to login first"
 
+@app.route('/api/write/', methods=['GET','POST'])
+def api_write():
+    if request.method == 'POST':
+        Title = request.form.get("Title")
+        Text = request.form.get("Text")
+        Image = request.form.get("Image")
 
-
+        users = mongo.db.users
+        login_user = users.find_one({'username' : session.get("username")})
+        login_username = session.get('username')
+        new_post = {
+            "title": Title,
+            "text": Text,
+            "image": Image,
+            "author": login_username
+        }
+        collection.insert(new_post)
+        return redirect('/posts')
+    else:
+        return "U need to login first"
+    return "U need to login first"
 
 @app.route('/register/', methods=['GET','POST'])
 def register():
@@ -236,11 +260,38 @@ def login():
     
     return render_template('login.html')
 
+@app.route('/aoi/login/', methods=['GET','POST'])
+def login():
+
+    if request.method == "POST":
+        users = mongo.db.users
+        login_user = users.find_one({'username' : request.form['username']})
+
+        if login_user:
+            if bcrypt.hashpw(request.form['password'].encode('utf-8'), login_user['password']) == login_user['password']:
+                session['username'] = request.form['username']
+                return redirect('/mainpage')
+
+        return 'Invalid username/password combination'
+    
+    return render_template('login.html')
+
+
 @app.route("/logout")
 def logout():
     if not session.get("username") is None:
         session['username'] = None
     return redirect('/mainpage')
+
+@app.route("/api/logout")
+def api_logout():
+    session['username'] = None
+
+@app.route("/api/check_status")
+def api_check_status():
+    if not session.get("username") is None:
+        return True
+    else: return False
 
 @app.route("/id/<username>")
 def other_user_page(username):
@@ -278,35 +329,20 @@ def api_login_user_page(username):
     return page_sanitized
         
 
+@app.route("/viewmore/<post_id>")
+def viewmore(post_id):
+    post = collection.find_one({"_id": ObjectId(str(post_id))})
+    #print(post.title)
+    return render_template('viewmore.html', post = post)
 
-@app.route("/viewmore")
-def viewmore():
-    return render_template('viewmore.html')
+
+@app.route("/api/viewmore/<post_id>")
+def viewmore(post_id):
+    post = collection.find_one({"_id": ObjectId(str(post_id))})
+    #print(post.title)
+    return render_template('viewmore.html', post = post)
 
 
-
-
-@app.route('/api/write/', methods=['GET','POST'])
-def api_write():
-    if request.method == 'POST':
-        Title = request.form.get("Title")
-        Text = request.form.get("Text")
-        Image = request.form.get("Image")
-
-        users = mongo.db.users
-        login_user = users.find_one({'username' : session.get("username")})
-        login_username = session.get('username')
-        new_post = {
-            "title": Title,
-            "text": Text,
-            "image": Image,
-            "author": login_username
-        }
-        collection.insert(new_post)
-        return redirect('/posts')
-    else:
-        return "U need to login first"
-    return "U need to login first"
 
 
 
