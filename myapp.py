@@ -270,11 +270,10 @@ def api_login():
         if login_user:
             if bcrypt.hashpw(request.form['password'].encode('utf-8'), login_user['password']) == login_user['password']:
                 session['username'] = request.form['username']
-                return redirect('/mainpage')
+                return "already login"
 
         return 'Invalid username/password combination'
     
-    return render_template('login.html')
 
 
 @app.route("/logout")
@@ -337,7 +336,7 @@ def viewmore(post_id):
 
 
 @app.route("/api/viewmore/<post_id>")
-def viewmore(post_id):
+def api_viewmore(post_id):
     post = collection.find_one({"_id": ObjectId(str(post_id))})
     #print(post.title)
     return render_template('viewmore.html', post = post)
