@@ -264,15 +264,17 @@ def login():
 def api_login():
 
     if request.method == "POST":
+        response_json = request.get_json(force = True)
         users = mongo.db.users
-        login_user = users.find_one({'username' : request.form['username']})
+        #login_user = users.find_one({'username' : request.form['username']})
+        login_user = users.find_one({'username' : response_json['username']})
 
         if login_user:
-            if bcrypt.hashpw(request.form['password'].encode('utf-8'), login_user['password']) == login_user['password']:
-                session['username'] = request.form['username']
-                return "already login"
+            if bcrypt.hashpw(response_json['password'].encode('utf-8'), login_user['password']) == login_user['password']:
+                session['username'] = response_json['username']
+                return "True"
 
-        return 'Invalid username/password combination'
+        return "False"
     
 
 
@@ -339,7 +341,12 @@ def viewmore(post_id):
 def api_viewmore(post_id):
     post = collection.find_one({"_id": ObjectId(str(post_id))})
     #print(post.title)
-    return render_template('viewmore.html', post = post)
+    response = {}
+
+    response["post"] = post
+    response_json = json.loads(json_util.dumps(response))
+    return response_json
+
 
 
 
