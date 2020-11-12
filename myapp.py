@@ -283,14 +283,16 @@ def api_login():
         users = mongo.db.users
         #login_user = users.find_one({'username' : request.form['username']})
         login_user = users.find_one({'username' : response_json['username']})
-
+        send_json = {}
         if login_user:
             if bcrypt.hashpw(response_json['password'].encode('utf-8'), login_user['password']) == login_user['password']:
                 session['username'] = response_json['username']
-                print('he is right')
-                return "True"
-        print('he is wrong')
-        return "False"
+                send_json['check'] = 'True'
+                send_to_json = json.loads(json_util.dumps(send_json))
+                return send_to_json
+        send_json['check'] = 'False'
+        send_to_json = json.loads(json_util.dumps(send_json))
+        return send_to_json
     
 
 
@@ -306,9 +308,15 @@ def api_logout():
 
 @app.route("/api/check_status")
 def api_check_status():
+    send_json = {}
     if not session.get("username") is None:
-        return True
-    else: return False
+        send_json['check'] = 'True'
+        send_to_json = json.loads(json_util.dumps(send_json))
+        return send_to_json
+    else: 
+        send_json['check'] = 'False'
+        send_to_json = json.loads(json_util.dumps(send_json))
+        return send_to_json
 
 @app.route("/id/<username>")
 def other_user_page(username):
