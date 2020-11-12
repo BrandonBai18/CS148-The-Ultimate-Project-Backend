@@ -192,7 +192,7 @@ def write():
 
 @app.route('/api/write/', methods=['GET','POST'])
 def api_write():
-    if request.method == 'POST':
+    if not session.get("username") is None:
         response_json = request.get_json(force = True)
         #Title = request.form.get("Title")
         Title = response_json['title']
