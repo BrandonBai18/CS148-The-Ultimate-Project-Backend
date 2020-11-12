@@ -208,9 +208,17 @@ def api_write():
             "author": login_username
         }
         collection.insert(new_post)
-        return "True"
+        send_json = {}
+        
+        send_json['check'] = 'True'
+        send_to_json = json.loads(json_util.dumps(send_json))
+        return send_to_json
     else:
-        return "False"
+        send_json = {}
+        
+        send_json['check'] = 'False'
+        send_to_json = json.loads(json_util.dumps(send_json))
+        return send_to_json
 
 @app.route('/register/', methods=['GET','POST'])
 def register():
@@ -233,17 +241,19 @@ def register():
 def api_register():
     if request.method == 'POST':
         users = mongo.db.users
-        existing_user = users.find_one({'username' : request.form['username']})
+        response_json = request.get_json(force = True)
+        username = response_json['username']
+        password = response_json['password']
+        existing_user = users.find_one({'username' : username})
 
         if existing_user is None:
-            hashpass = bcrypt.hashpw(request.form['password'].encode('utf-8'), bcrypt.gensalt())
-            users.insert({'username' : request.form['username'], 'password' : hashpass})
-            session['username'] = request.form['username']
-            return redirect('/mainpage')
+            hashpass = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+            users.insert({'username' : username, 'password' : hashpass})
+            session['username'] = username
+            return "True"
         
-        return 'That username already exists!'
+        return "False"
 
-    return render_template('register.html')
 
 @app.route('/login/', methods=['GET','POST'])
 def login():
@@ -313,6 +323,14 @@ def api_other_user_page(username):
     page_sanitized = json.loads(json_util.dumps(response))
     return page_sanitized
     
+@app.route("/id_profile/<username>")
+def login_user_page(username):
+    if not session.get("username") is None:
+        users = mongo.db.users
+        login_user = users.find_one({'username' : session.get('username')})
+        posts = collection.find({"author": login_user['username']})
+        render_template('login_user_page.html', username = session.get('username'), id = login_user['_id'], post = posts)
+        
 
 @app.route("/api/id_profile/<username>")
 def api_login_user_page(username):
