@@ -172,6 +172,7 @@ def write():
             Text = request.form.get("Text")
             Image = request.form.get("Image")
             time_now = datetime.datetime.now()
+            date_time = time_now.strftime("%m/%d/%Y")
             print(time_now)
             users = mongo.db.users
             login_user = users.find_one({'username' : session.get("username")})
@@ -181,7 +182,7 @@ def write():
                 "text": Text,
                 "image": Image,
                 "author": login_username,
-                "time": time_now
+                "time": date_time
             }
             collection.insert(new_post)
             return redirect('/posts')
@@ -200,12 +201,15 @@ def api_write():
         #Image = request.form.get("Image")
         Image = response_json['image']
 
+        time_now = datetime.datetime.now()
+        date_time = time_now.strftime("%m/%d/%Y")
         login_username = session.get('username')
         new_post = {
             "title": Title,
             "text": Text,
             "image": Image,
-            "author": login_username
+            "author": login_username,
+            "time": date_time
         }
         collection.insert(new_post)
         send_json = {}
