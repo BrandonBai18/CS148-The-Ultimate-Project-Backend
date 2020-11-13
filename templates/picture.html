@@ -1,0 +1,8 @@
+<form method="POST" action="/personalize/{{user.username}}/picture" enctype = "multipart/form-data">
+    <div class="form-group">
+        <label>Picture</label>
+        <input type="text" class="form-control" id="picture" name="picture" >
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+<a href = "/personalize/{{user.username}}">go back</a>

@@ -17,6 +17,7 @@ from flask_session import Session
 from bson import json_util, ObjectId
 from bson.objectid import ObjectId
 import datetime
+from werkzeug.utils import secure_filename
 #flask-session-0.3.2
 cloud_url = "mongodb+srv://Ab990618:Ab990618@cluster0.ztgu2.mongodb.net/hospital_post?retryWrites=true&w=majority"
 app = Flask(__name__)
@@ -31,7 +32,7 @@ client = pymongo.MongoClient([uri])
 database = client['hospital_post']
 collection = database['final_post_db_1']
 app.config['MONGO_DBNAME'] = 'user_db_1'
-
+APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 #app.config['MONGO_URI'] = 'mongodb://0.0.0.0:27017/user_db_1'
 app.config['MONGO_URI'] = 'mongodb+srv://Ab990618:Ab990618@cluster0.ztgu2.mongodb.net/user_db_1?retryWrites=true&w=majority'
 mongo = PyMongo(app)
@@ -236,6 +237,7 @@ def register():
             users.insert({
                 'username' : request.form['username'],
                 'password' : hashpass,
+                'picture': None,
                 'gender': None,
                 'birthday': None,
                 'rela_sta': None,
@@ -348,11 +350,11 @@ def api_logout():
 def api_check_status():
     send_json = {}
     if not session.get("username") is None:
-        send_json['check'] = 'True'
+        send_json['check'] = session.get("username")
         send_to_json = json.loads(json_util.dumps(send_json))
         return send_to_json
     else: 
-        send_json['check'] = 'False'
+        send_json['check'] = None
         send_to_json = json.loads(json_util.dumps(send_json))
         return send_to_json
 
@@ -469,7 +471,28 @@ def personalize_element(username,element):
                 users.update_one({"username": username},{"$set": {"company": request.form.get("company")}})
                 next_page = "/personalize/" + username
                 return redirect(next_page)
-    
+
+        if element == 'picture':
+            if request.method == 'GET':
+                return render_template('picture.html', user = login_user)
+            if request.method == 'POST':
+                """
+                target = os.path.join(APP_ROOT, 'user_profile_images/')  #folder path
+                if not os.path.isdir(target):
+                    os.mkdir(target)     # create folder if not exits
+                #user_picture_collection = database.mongo.db.user_pictures  # database table name
+                for upload in request.files.getlist("picture"): #multiple image handel
+                    filename = secure_filename(upload.filename)
+                    destination = "/".join([target, filename])
+                    upload.save(destination)
+                    #user_picture_collection.insert({'picture': filename})   #insert into database mongo db
+                    users.update_one({"username": username},{"$set": {"picture": filename}})
+                next_page = "/personalize/" + username
+                return redirect(next_page)
+                """
+                users.update_one({"username": username},{"$set": {"picture": request.form.get("picture")}})
+                next_page = "/personalize/" + username
+                return redirect(next_page)
 
     
     

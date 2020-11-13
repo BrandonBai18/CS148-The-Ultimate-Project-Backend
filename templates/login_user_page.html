@@ -7,6 +7,12 @@
 <h>your _id: </h>
 {{user._id}}</br></br>
 
+{% if user.picture != None %}
+<a>Profile picture: </a>
+<a href = "{{user.picture}}"></a>
+{% endif %}
+</br></br>
+
 {% if user.gender != None %}
 <a>gender: {{user.gender}}</a>
 {% endif %}

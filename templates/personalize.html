@@ -4,6 +4,13 @@
 <h>your _id: </h>
 {{user._id}}</br>
 
+<a>Profile picture: </a>
+{% if user.picture != None %}
+<a><img src = "{{user.picture}}"> </a>
+{% endif %}<br>
+<a href = "/personalize/{{user.username}}/picture">update</a>
+<br>
+<br>
 
 <a>gender: </a>
 {% if user.gender != None %}
