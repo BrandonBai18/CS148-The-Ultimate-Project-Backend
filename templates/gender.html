@@ -1,0 +1,9 @@
+<form action="/personalize/{{user.username}}/gender" method="POST">
+    <div class="form-group">
+        <label>Gender</label>
+        <input type="text" class="form-control" id="gender" name="gender" placeholder={{user.gender}}>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+
+</form>
+<a href = "/personalize/{{user.username}}">go back</a>

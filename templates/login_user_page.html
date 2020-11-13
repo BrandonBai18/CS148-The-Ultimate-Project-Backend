@@ -3,11 +3,40 @@
 </h>
 
 <h>your username: </h>
-{{username}}</br>
+{{user.username}}</br></br>
 <h>your _id: </h>
-{{id}}</br>
-<h>Gender: </h></br>
-<h>Description</h></br>
+{{user._id}}</br></br>
+
+{% if user.gender != None %}
+<a>gender: {{user.gender}}</a>
+{% endif %}
+</br></br>
+{% if user.birthday != None %}
+<a>birthday: {{user.birthday}}</a>
+{% endif %}
+</br></br>
+{% if user.rela_sta != None %}
+<a>relationship status: {{user.rela_sta}}</a>
+{% endif %}
+</br></br>
+{% if user.location != None %}
+<a>location: {{user.location}}</a>
+{% endif %}
+</br></br>
+{% if user.hometown != None %}
+<a>hometown: {{user.hometown}}</a>
+{% endif %}
+</br></br>
+{% if user.school != None %}
+<a>school: {{user.school}}</a>
+{% endif %}
+</br></br>
+{% if user.company != None %}
+<a>company: {{user.company}}</a>
+{% endif %}
+</br></br>
+<a href = "/personalize/{{user.username}}">Change your personal info</a>
+</br></br>
 <h>Posts: </h></br>
 {% for post in post_database %}
 <div>
@@ -17,5 +46,5 @@
     <a href="/viewmore">View More</a></br>
 </div></br>
 {% endfor %} 
-
+</br></br>
 <a href="/mainpage">Main</a></br>

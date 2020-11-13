@@ -1,0 +1,58 @@
+
+<h>your username: </h>
+{{user.username}}
+<h>your _id: </h>
+{{user._id}}</br>
+
+
+<a>gender: </a>
+{% if user.gender != None %}
+<a>{{user.gender}}</a>
+{% endif %}<br>
+<a href = "/personalize/{{user.username}}/gender">update</a>
+<br>
+<br>
+
+<a>birthday: </a>
+{% if user.birthday != None %}
+<a> {{user.birthday}}</a>
+{% endif %}<br>
+<a href = "/personalize/{{user.username}}/birthday">update</a>
+<br>
+<br>
+<a>relationship status: </a>
+{% if user.rela_sta != None %}
+<a>{{user.rela_sta}}</a>
+{% endif %}<br>
+<a href = "/personalize/{{user.username}}/rela_sta">update</a>
+<br>
+<br>
+<a>location: </a>
+{% if user.location != None %}
+<a> {{user.location}}</a>
+{% endif %}<br>
+<a href = "/personalize/{{user.username}}/location">update</a>
+<br>
+<br>
+<a>hometown: </a>
+{% if user.hometown != None %}
+<a> {{user.hometown}}</a>
+{% endif %}<br>
+<a href = "/personalize/{{user.username}}/hometown">update</a>
+<br>
+<br>
+<a>school: </a>
+{% if user.school != None %}
+<a> {{user.school}}</a>
+{% endif %}<br>
+<a href = "/personalize/{{user.username}}/school">update</a>
+<br>
+<br>
+<a>company: </a>
+{% if user.company != None %}
+<a> {{user.company}}</a>
+{% endif %}<br>
+<a href = "/personalize/{{user.username}}/company">update</a>
+<br>
+<br>
+<a href = "/mainpage">main</a>

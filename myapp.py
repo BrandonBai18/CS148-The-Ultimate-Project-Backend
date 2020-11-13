@@ -30,10 +30,10 @@ uri = cloud_url
 client = pymongo.MongoClient([uri])
 database = client['hospital_post']
 collection = database['final_post_db_1']
-app.config['MONGO_DBNAME'] = 'user_database'
+app.config['MONGO_DBNAME'] = 'user_db_1'
 
-#app.config['MONGO_URI'] = 'mongodb://0.0.0.0:27017/user_database'
-app.config['MONGO_URI'] = 'mongodb+srv://Ab990618:Ab990618@cluster0.ztgu2.mongodb.net/user_database?retryWrites=true&w=majority'
+#app.config['MONGO_URI'] = 'mongodb://0.0.0.0:27017/user_db_1'
+app.config['MONGO_URI'] = 'mongodb+srv://Ab990618:Ab990618@cluster0.ztgu2.mongodb.net/user_db_1?retryWrites=true&w=majority'
 mongo = PyMongo(app)
 
 
@@ -233,7 +233,17 @@ def register():
 
         if existing_user is None:
             hashpass = bcrypt.hashpw(request.form['password'].encode('utf-8'), bcrypt.gensalt())
-            users.insert({'username' : request.form['username'], 'password' : hashpass})
+            users.insert({
+                'username' : request.form['username'],
+                'password' : hashpass,
+                'gender': None,
+                'birthday': None,
+                'rela_sta': None,
+                'location': None,
+                'hometown': None,
+                'school': None,
+                'company': None
+                })
             session['username'] = request.form['username']
             return redirect('/mainpage')
         
@@ -241,6 +251,19 @@ def register():
 
     return render_template('register.html')
 
+    """
+    个人简介
+    性别
+    生日
+    星座
+    感情状况
+    情绪爱好: 电影 音乐 图书
+    所在地
+    家乡
+    学校
+    公司
+    昵称:
+    """
 @app.route('/api/register/', methods=['GET','POST'])
 def api_register():
     if request.method == 'POST':
@@ -252,7 +275,17 @@ def api_register():
         send_json = {}
         if existing_user is None:
             hashpass = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-            users.insert({'username' : username, 'password' : hashpass})
+            users.insert({
+                'username' : username, 
+                'password' : hashpass,
+                'gender': None,
+                'birthday': None,
+                'rela_sta': None,
+                'location': None,
+                'hometown': None,
+                'school': None,
+                'company': None
+            })
             session['username'] = username
             send_json['check'] = 'True'
             send_to_json = json.loads(json_util.dumps(send_json))
@@ -346,7 +379,7 @@ def login_user_page(username):
         users = mongo.db.users
         login_user = users.find_one({'username' : session.get('username')})
         posts = collection.find({"author": login_user['username']})
-        render_template('login_user_page.html', username = session.get('username'), id = login_user['_id'], post = posts)
+        return render_template('login_user_page.html', user = login_user, post = posts)
         
 
 @app.route("/api/id_profile/<username>")
@@ -357,15 +390,89 @@ def api_login_user_page(username):
     login_user = users.find_one({'username' : username})
     posts = collection.find({"author": login_user['username']})
     response = {}
-    #for post in posts:
-    #    new_num = "post_" + str(num)
-    #    response[new_num] = post
-    #    num = num + 1
     response["posts"] = posts
     response["profile"] = login_user
     page_sanitized = json.loads(json_util.dumps(response))
     return page_sanitized
+
+@app.route("/personalize/<username>", methods = ['GET', 'POST'])
+def personalize(username):
+    if request.method == "GET":
+        users = mongo.db.users
+        login_user = users.find_one({'username' : username})
+        return render_template('personalize.html', user = login_user)
+    """
+    if request.method == "POST":
+        users = mongo.db.users
+        login_user = users.find_one({'username' : username})
+        login_user.update_one()
+    """
+
+
+@app.route("/personalize/<username>/<element>",methods = ['GET', 'POST'])
+def personalize_element(username,element):
+        users = mongo.db.users
+        login_user = users.find_one({'username' : username})
+        if element == 'gender':
+            if request.method == 'GET':
+                return render_template('gender.html', user = login_user)
+            if request.method == 'POST':
+                users.update_one({"username": username},{"$set": {"gender": request.form.get("gender")}})
+                next_page = "/personalize/" + username
+                return redirect(next_page)
+
         
+        if element == 'birthday':
+            if request.method == 'GET':
+                return render_template('birthday.html', user = login_user)
+            if request.method == 'POST':
+                users.update_one({"username": username},{"$set": {"birthday": request.form.get("birthday")}})
+                next_page = "/personalize/" + username
+                return redirect(next_page)
+
+        if element == 'rela_sta':
+            if request.method == 'GET':
+                return render_template('rela_sta.html', user = login_user)
+            if request.method == 'POST':
+                users.update_one({"username": username},{"$set": {"rela_sta": request.form.get("rela_sta")}})
+                next_page = "/personalize/" + username
+                return redirect(next_page)
+
+        if element == 'location':
+            if request.method == 'GET':
+                return render_template('location.html', user = login_user)
+            if request.method == 'POST':
+                users.update_one({"username": username},{"$set": {"location": request.form.get("location")}})
+                next_page = "/personalize/" + username
+                return redirect(next_page)
+
+        if element == 'hometown':
+            if request.method == 'GET':
+                return render_template('hometown.html', user = login_user)
+            if request.method == 'POST':
+                users.update_one({"username": username},{"$set": {"hometown": request.form.get("hometown")}})
+                next_page = "/personalize/" + username
+                return redirect(next_page)
+
+        if element == 'school':
+            if request.method == 'GET':
+                return render_template('school.html', user = login_user)
+            if request.method == 'POST':
+                users.update_one({"username": username},{"$set": {"school": request.form.get("school")}})
+                next_page = "/personalize/" + username
+                return redirect(next_page)
+
+        if element == 'company':
+            if request.method == 'GET':
+                return render_template('company.html', user = login_user)
+            if request.method == 'POST':
+                users.update_one({"username": username},{"$set": {"company": request.form.get("company")}})
+                next_page = "/personalize/" + username
+                return redirect(next_page)
+    
+
+    
+    
 
 @app.route("/viewmore/<post_id>")
 def viewmore(post_id):
