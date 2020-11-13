@@ -329,6 +329,7 @@ def api_login():
                 session['username'] = response_json['username']
                 send_json['check'] = 'True'
                 send_to_json = json.loads(json_util.dumps(send_json))
+                print("already login -----------")
                 return send_to_json
         send_json['check'] = 'False'
         send_to_json = json.loads(json_util.dumps(send_json))
@@ -342,6 +343,7 @@ def logout():
         session['username'] = None
     return redirect('/mainpage')
 
+
 @app.route("/api/logout")
 def api_logout():
     session['username'] = None
@@ -352,10 +354,12 @@ def api_check_status():
     if not session.get("username") is None:
         send_json['check'] = session.get("username")
         send_to_json = json.loads(json_util.dumps(send_json))
+        print("already login -----------")
         return send_to_json
     else: 
         send_json['check'] = None
         send_to_json = json.loads(json_util.dumps(send_json))
+        print("not login -----------")
         return send_to_json
 
 @app.route("/id/<username>")
