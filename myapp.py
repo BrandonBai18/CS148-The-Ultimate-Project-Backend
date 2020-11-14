@@ -324,7 +324,7 @@ def api_login():
                 send_to_json = json.loads(json_util.dumps(send_json))
                 print("already login -----------")
                 return send_to_json
-        send_json['check'] = None
+        send_json['check'] = "not login"
         send_to_json = json.loads(json_util.dumps(send_json))
         return send_to_json
     
