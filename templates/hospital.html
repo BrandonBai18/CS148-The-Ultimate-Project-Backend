@@ -1,9 +1,20 @@
-<form method="POST" action="/hospital">
-    <div class="form-group">
-        <label>Enter your zip code here</label>
-        <input type="text" class="form-control" id="zip_code" name="zip_code" placeholder="zip_code">
-    </div>
+<div>
+    <form method="POST" action="/hospital/zip_code">
+        <div class="form-group">
+            <label>Enter zip code here</label>
+            <input type="text" class="form-control" id="zip_code" name="zip_code" placeholder="zip code">
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
 
-    
-    <button type="submit" class="btn btn-primary">Submit</button>
-</form>
+
+    <form method="POST" action="/hospital/name">
+        <div class="form-group">
+            <label>Enter hospital name here</label>
+            <input type="text" class="form-control" id="name" name="name" placeholder="hospital name">
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
+
+<a href="/mainpage">Main</a></br>

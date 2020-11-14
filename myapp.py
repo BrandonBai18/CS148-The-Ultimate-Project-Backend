@@ -511,18 +511,39 @@ def api_viewmore(post_id):
     return response_json
 
 
-@app.route("/hospital", methods = ["GET", "POST"])
-def hospital():
+
+
+@app.route("/hospital/<element>", methods = ["GET", "POST"])
+def hospital(element):
     if request.method == "GET":
         return render_template('hospital.html')
     else:
         with open('Hospitals.json', 'r') as file_1:
             data=file_1.read()
         hos_info = json.loads(data)
-        for hospital in hos_info['features']:
-            if hospital['properties']['ZIP'] == request.form.get('zip_code'):
-                return hospital['properties']['NAME']
-        return "not found"
+
+        if element == 'zip_code':
+            for hospital in hos_info['features']:
+                if hospital['properties']['ZIP'] == request.form.get('zip_code'):
+                    return hospital['properties']['NAME'].lower()
+            return "zip code not found"
+
+        if element == 'name':
+            a = ""
+            return_hospitals = []
+            search_name = request.form.get('name')
+            for hospital in hos_info['features']:
+                if search_name.lower() in hospital['properties']['NAME'].lower():
+                    return_hospitals.append(hospital['properties']['NAME'].lower())
+                    #print("".join(hospital['properties']['NAME']))
+            
+            if len(return_hospitals) == 0:
+                return "name not found"
+            else:
+                return render_template('hospital_name.html', hospitals = return_hospitals)
+
+
+        
 
         #return str(hos_info['features'][0]['properties']['NAME'])
 
