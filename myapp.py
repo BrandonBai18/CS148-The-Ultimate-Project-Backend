@@ -195,16 +195,15 @@ def write():
 def api_write():
     #if not session.get("username") is None:
     response_json = request.get_json(force = True)
-    #Title = request.form.get("Title")
+    
     Title = response_json['title']
-    #Text = request.form.get("Text")
     Text = response_json['text']
-    #Image = request.form.get("Image")
     Image = response_json['image']
+    login_username = response_json['author']
 
     time_now = datetime.datetime.now()
     date_time = time_now.strftime("%m/%d/%Y")
-    login_username = session.get('username')
+    #login_username = session.get('username')
     new_post = {
         "title": Title,
         "text": Text,
@@ -218,12 +217,6 @@ def api_write():
     send_json['check'] = 'True'
     send_to_json = json.loads(json_util.dumps(send_json))
     return send_to_json
-    #else:
-    #    send_json = {}
-    #    
-    #    send_json['check'] = 'False'
-    #    send_to_json = json.loads(json_util.dumps(send_json))
-    #    return send_to_json
 
 @app.route('/register/', methods=['GET','POST'])
 def register():
