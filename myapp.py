@@ -230,7 +230,7 @@ def register():
             users.insert({
                 'username' : request.form['username'],
                 'password' : hashpass,
-                'picture': None,
+                'picture': "https://cdn5.vectorstock.com/i/thumb-large/82/59/anonymous-user-flat-icon-vector-18958259.jpg",
                 'gender': None,
                 'birthday': None,
                 'rela_sta': None,
@@ -273,6 +273,7 @@ def api_register():
             users.insert({
                 'username' : username, 
                 'password' : hashpass,
+                'picture': "https://cdn5.vectorstock.com/i/thumb-large/82/59/anonymous-user-flat-icon-vector-18958259.jpg",
                 'gender': None,
                 'birthday': None,
                 'rela_sta': None,
@@ -283,6 +284,7 @@ def api_register():
             })
             session['username'] = username
             send_json['check'] = username
+            send_json['picture'] = "https://cdn5.vectorstock.com/i/thumb-large/82/59/anonymous-user-flat-icon-vector-18958259.jpg"
             send_to_json = json.loads(json_util.dumps(send_json))
             return send_to_json
         
@@ -320,6 +322,7 @@ def api_login():
         if bcrypt.hashpw(response_json['password'].encode('utf-8'), login_user['password']) == login_user['password']:
             session['username'] = response_json['username']
             send_json['check'] = response_json['username']
+            send_json['picture'] = login_user['picture']
             send_to_json = json.loads(json_util.dumps(send_json))
             print("already login -----------")
             return send_to_json
