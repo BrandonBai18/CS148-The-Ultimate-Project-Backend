@@ -311,22 +311,21 @@ def login():
 @app.route('/api/login/', methods=['GET','POST'])
 def api_login():
 
-    if request.method == "POST":
-        response_json = request.get_json(force = True)
-        users = mongo.db.users
-        #login_user = users.find_one({'username' : request.form['username']})
-        login_user = users.find_one({'username' : response_json['username']})
-        send_json = {}
-        if login_user:
-            if bcrypt.hashpw(response_json['password'].encode('utf-8'), login_user['password']) == login_user['password']:
-                session['username'] = response_json['username']
-                send_json['check'] = response_json['username']
-                send_to_json = json.loads(json_util.dumps(send_json))
-                print("already login -----------")
-                return send_to_json
-        send_json['check'] = "not login"
-        send_to_json = json.loads(json_util.dumps(send_json))
-        return send_to_json
+    response_json = request.get_json(force = True)
+    users = mongo.db.users
+    #login_user = users.find_one({'username' : request.form['username']})
+    login_user = users.find_one({'username' : response_json['username']})
+    send_json = {}
+    if login_user:
+        if bcrypt.hashpw(response_json['password'].encode('utf-8'), login_user['password']) == login_user['password']:
+            session['username'] = response_json['username']
+            send_json['check'] = response_json['username']
+            send_to_json = json.loads(json_util.dumps(send_json))
+            print("already login -----------")
+            return send_to_json
+    send_json['check'] = "not login"
+    send_to_json = json.loads(json_util.dumps(send_json))
+    return send_to_json
     
 
 
@@ -511,6 +510,21 @@ def api_viewmore(post_id):
     response_json = json.loads(json_util.dumps(response))
     return response_json
 
+
+@app.route("/hospital", methods = ["GET", "POST"])
+def hospital():
+    if request.method == "GET":
+        return render_template('hospital.html')
+    else:
+        with open('Hospitals.json', 'r') as file_1:
+            data=file_1.read()
+        hos_info = json.loads(data)
+        for hospital in hos_info['features']:
+            if hospital['properties']['ZIP'] == request.form.get('zip_code'):
+                return hospital['properties']['NAME']
+        return "not found"
+
+        #return str(hos_info['features'][0]['properties']['NAME'])
 
 
 
