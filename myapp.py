@@ -30,7 +30,8 @@ DEBUG=True
 uri = cloud_url
 client = pymongo.MongoClient([uri])
 database = client['hospital_post']
-collection = database['final_post_db_1']
+collection = database['post_db_1']
+collection_comment = database['comment_db_1']
 app.config['MONGO_DBNAME'] = 'user_db_1'
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 #app.config['MONGO_URI'] = 'mongodb://0.0.0.0:27017/user_db_1'
@@ -183,7 +184,8 @@ def write():
                 "text": Text,
                 "image": Image,
                 "author": login_username,
-                "time": date_time
+                "time": date_time,
+                "comment_list": []
             }
             collection.insert(new_post)
             return redirect('/posts')
@@ -209,7 +211,8 @@ def api_write():
         "text": Text,
         "image": Image,
         "author": login_username,
-        "time": date_time
+        "time": date_time,
+        "comment_list": []
     }
     collection.insert(new_post)
     send_json = {}
@@ -360,7 +363,9 @@ def api_check_status():
 @app.route("/id/<username>")
 def other_user_page(username):
     posts = collection.find({"author": username})
-    return render_template('other_user_page.html', username = username, post_database =posts)
+    users = mongo.db.users
+    user = users.find_one({'username' : username})
+    return render_template('other_user_page.html', username = username, post_database = posts, user = user)
 
 @app.route("/api/id/<username>")
 def api_other_user_page(username):
@@ -496,11 +501,36 @@ def personalize_element(username,element):
     
     
 
-@app.route("/viewmore/<post_id>")
+@app.route("/viewmore/<post_id>", methods = ["POST", "GET"])
 def viewmore(post_id):
-    post = collection.find_one({"_id": ObjectId(str(post_id))})
-    #print(post.title)
-    return render_template('viewmore.html', post = post)
+    if request.method == "GET":
+        post = collection.find_one({"_id": ObjectId(str(post_id))})
+        comment_list = post['comment_list']
+
+
+        return render_template('viewmore.html', post = post, comment_list = comment_list, _id = ObjectId(str(post_id)))
+    else:
+        if session.get("username") == None:
+            return "U need to sign in first"
+        else:
+            comment = request.form.get("comment")
+            username = session.get('username')
+            just_inserted_id = collection_comment.insert_one({"content": comment, "username": username}).inserted_id
+
+            post = collection.find_one({"_id": ObjectId(str(post_id))})
+            comment_list = post['comment_list']
+            comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username})
+
+            collection.update_one({"_id": ObjectId(str(post_id))},{"$set": {"comment_list": comment_list}})
+            next_page = "/viewmore/" + str(post_id)
+            return redirect(next_page)
+
+            
+
+        
+
+
+
 
 
 @app.route("/api/viewmore/<post_id>")

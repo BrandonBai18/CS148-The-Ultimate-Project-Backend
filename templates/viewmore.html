@@ -3,4 +3,21 @@
 <span>>{{ post.text }}</span></br>
 <img src = "{{ post.image }}" ></br>
 <a href="/id/{{post.author}}">{{post.author}}</a></br>
+</br>
+<h>Below are the comments</h></br>
+</br></br>
+{% for comment in comment_list %}
+    {{comment.content}}</br>
+    <a href = "/id/{{comment.username}}">{{comment.username}}</a></br></br>
+{% endfor %}
+</br>
+
+<form method="POST" action="/viewmore/{{_id}}">
+    <div class="form-group">
+        <label>comment here</label>
+        <input type="text" class="form-control" id="comment" name="comment" placeholder="comment">
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+
 <a href="/mainpage">Main</a></br>

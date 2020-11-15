@@ -3,6 +3,40 @@
         <h>This is the profile page of </h>
         {{username}}
     </body>
+    {% if user.picture != None %}
+    <a>Profile picture: </a>
+    <a ><img src = "{{user.picture}}"></a>
+    {% endif %}
+    </br></br>
+
+    {% if user.gender != None %}
+    <a>gender: {{user.gender}}</a>
+    {% endif %}
+    </br></br>
+    {% if user.birthday != None %}
+    <a>birthday: {{user.birthday}}</a>
+    {% endif %}
+    </br></br>
+    {% if user.rela_sta != None %}
+    <a>relationship status: {{user.rela_sta}}</a>
+    {% endif %}
+    </br></br>
+    {% if user.location != None %}
+    <a>location: {{user.location}}</a>
+    {% endif %}
+    </br></br>
+    {% if user.hometown != None %}
+    <a>hometown: {{user.hometown}}</a>
+    {% endif %}
+    </br></br>
+    {% if user.school != None %}
+    <a>school: {{user.school}}</a>
+    {% endif %}
+    </br></br>
+    {% if user.company != None %}
+    <a>company: {{user.company}}</a>
+    {% endif %}
+    </br></br>
     {% for post in post_database %}
         <div>
             <h2>{{ post.title }}</h2>
