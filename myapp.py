@@ -18,6 +18,10 @@ from bson import json_util, ObjectId
 from bson.objectid import ObjectId
 import datetime
 from werkzeug.utils import secure_filename
+
+
+
+
 #flask-session-0.3.2
 cloud_url = "mongodb+srv://Ab990618:Ab990618@cluster0.ztgu2.mongodb.net/hospital_post?retryWrites=true&w=majority"
 app = Flask(__name__)
@@ -332,7 +336,7 @@ def api_login():
     send_json['check'] = "not login"
     send_to_json = json.loads(json_util.dumps(send_json))
     return send_to_json
-    
+
 
 
 @app.route("/logout")
@@ -554,11 +558,13 @@ def hospital(element):
         with open('Hospitals.json', 'r') as file_1:
             data=file_1.read()
         hos_info = json.loads(data)
-
+        
         if element == 'zip_code':
+            return_hospitals = []
             for hospital in hos_info['features']:
                 if hospital['properties']['ZIP'] == request.form.get('zip_code'):
-                    return hospital['properties']['NAME'].lower()
+                    return_hospitals.append(hospital['properties']['NAME'].lower())
+                    return render_template('hospital_name.html', hospitals = return_hospitals)
             return "zip code not found"
 
         if element == 'name':
@@ -575,6 +581,23 @@ def hospital(element):
             else:
                 return render_template('hospital_name.html', hospitals = return_hospitals)
 
+@app.route("/hospital/viewmore/<hos_name>", methods = ["GET", "POST"])
+def hospital_viewmore(hos_name):
+    with open('Hospitals.json', 'r') as file_1:
+        data=file_1.read()
+    hos_info = json.loads(data)
+    if len(hos_name) == 5:
+        for hospital in hos_info['features']:
+            if hospital['properties']['ZIP'] == hos_name:
+                result_hospital = hospital
+                break
+        return render_template("hospital_viewmore.html", hospital = result_hospital)
+    else:
+        for hospital in hos_info['features']:
+            if hos_name.lower() in hospital['properties']['NAME'].lower():
+                result_hospital = hospital
+                break
+        return render_template("hospital_viewmore.html", hospital = result_hospital)
 
         
 
