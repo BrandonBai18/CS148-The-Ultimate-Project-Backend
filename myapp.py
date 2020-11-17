@@ -34,8 +34,11 @@ DEBUG=True
 uri = cloud_url
 client = pymongo.MongoClient([uri])
 database = client['hospital_post']
+database_hospital_info = client['hospital_api']
 collection = database['post_db_1']
 collection_comment = database['comment_db_1']
+collection_hospitals = database_hospital_info['hospital_db_1']
+collection_hospital_comments = database_hospital_info['hospital_comment_db_1']
 app.config['MONGO_DBNAME'] = 'user_db_1'
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 #app.config['MONGO_URI'] = 'mongodb://0.0.0.0:27017/user_db_1'
@@ -555,56 +558,104 @@ def hospital(element):
     if request.method == "GET":
         return render_template('hospital.html')
     else:
-        with open('Hospitals.json', 'r') as file_1:
-            data=file_1.read()
-        hos_info = json.loads(data)
-        
         if element == 'zip_code':
             return_hospitals = []
-            for hospital in hos_info['features']:
-                if hospital['properties']['ZIP'] == request.form.get('zip_code'):
-                    return_hospitals.append(hospital['properties']['NAME'].lower())
+            zip_code = request.form.get('zip_code')
+            for hospital in collection_hospitals.find():
+                if zip_code == hospital['properties']['ZIP']:
+                    return_hospitals.append(hospital['properties']['NAME'])
                     return render_template('hospital_name.html', hospitals = return_hospitals)
-            return "zip code not found"
-
+            return "cannot find by zip code"
         if element == 'name':
-            a = ""
             return_hospitals = []
-            search_name = request.form.get('name')
-            for hospital in hos_info['features']:
-                if search_name.lower() in hospital['properties']['NAME'].lower():
-                    return_hospitals.append(hospital['properties']['NAME'].lower())
-                    #print("".join(hospital['properties']['NAME']))
-            
+            name = request.form.get('name')
+            for hospital in collection_hospitals.find():
+                if name.lower() in hospital['properties']['NAME'].lower():
+                    return_hospitals.append(hospital['properties']['NAME'])
+
             if len(return_hospitals) == 0:
                 return "name not found"
             else:
                 return render_template('hospital_name.html', hospitals = return_hospitals)
+    return "what happended?"
 
 @app.route("/hospital/viewmore/<hos_name>", methods = ["GET", "POST"])
 def hospital_viewmore(hos_name):
-    with open('Hospitals.json', 'r') as file_1:
-        data=file_1.read()
-    hos_info = json.loads(data)
-    if len(hos_name) == 5:
-        for hospital in hos_info['features']:
-            if hospital['properties']['ZIP'] == hos_name:
-                result_hospital = hospital
-                break
-        return render_template("hospital_viewmore.html", hospital = result_hospital)
+    if request.method == "GET":
+        with open('Hospitals.json', 'r') as file_1:
+            data=file_1.read()
+        hos_info = json.loads(data)
+        if len(hos_name) == 5:
+            for hospital in hos_info['features']:
+                if hospital['properties']['ZIP'] == hos_name:
+                    result_hospital = hospital
+                    break
+            return render_template("hospital_viewmore.html", hospital = result_hospital)
+        else:
+            for hospital in hos_info['features']:
+                if hos_name.lower() in hospital['properties']['NAME'].lower():
+                    result_hospital = hospital
+                    break
+            return render_template("hospital_viewmore.html", hospital = result_hospital)
+    
     else:
-        for hospital in hos_info['features']:
-            if hos_name.lower() in hospital['properties']['NAME'].lower():
-                result_hospital = hospital
-                break
-        return render_template("hospital_viewmore.html", hospital = result_hospital)
+        if session.get("username") == None:
+            return "U need to sign in first"
+        else:
+            comment = request.form.get("comment")
+            username = session.get('username')
+            just_inserted_id = collection_hospital_comments.insert_one({"content": comment, "username": username}).inserted_id
 
-        
+            hospital = collection_hospitals.find_one({"_id": ObjectId(str(hospital_id))})
+            comment_list = hospital['comment_list']
+            comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username})
+
+            collection_hospitals.update_one({"_id": ObjectId(str(hospital_id))},{"$set": {"comment_list": comment_list}})
+            next_page = "/hospital/viewmore/" + str(hospital_id)
+            return redirect(next_page)
+            
 
         #return str(hos_info['features'][0]['properties']['NAME'])
 
+@app.route("/viewmore/hospital/<name>", methods = ["GET", "POST"])
+def viewmore_hospital(name):
+    if request.method == "GET":
+        hospital = collection_hospitals.find_one({'name': name.upper()})
+        #print(hospital)
+        comment_list = hospital['comment_list']
+        return render_template('viewmore_hospital.html', hospital = hospital, comment_list = comment_list, hospital_name = hospital['name'])
+    else:
+        if session.get("username") == None:
+            return "U need to sign in first"
+        else:
+            comment = request.form.get("comment")
+            username = session.get('username')
+            just_inserted_id = collection_hospital_comments.insert_one({"content": comment, "username": username}).inserted_id
 
+            hospital = collection_hospitals.find_one({"name": name})
+            comment_list = hospital['comment_list']
+            comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username})
 
+            collection_hospitals.update_one({"name": name},{"$set": {"comment_list": comment_list}})
+            next_page = "/viewmore/hospital/" + name
+            return redirect(next_page)
+        
+        """
+        if len(hos_name) == 5:
+            for hospital in hos_info['features']:
+                if hospital['properties']['ZIP'] == hos_name:
+                    result_hospital = hospital
+                    break
+            return render_template("hospital_viewmore.html", hospital = result_hospital)
+        else:
+            for hospital in hos_info['features']:
+                if hos_name.lower() in hospital['properties']['NAME'].lower():
+                    result_hospital = hospital
+                    break
+            return render_template("hospital_viewmore.html", hospital = result_hospital)
+    
+        collection_hospitals.find({})
+        """
 
 
 def main():
@@ -616,6 +667,16 @@ def main():
     #Session(app)
 
     localport = int(os.getenv("PORT", 8118))
+    
+    """
+    FID = 1
+    for hospital in collection_hospitals.find():
+        name = hospital['properties']['NAME']
+        collection_hospitals.update({"_id": ObjectId(str(hospital['_id'])) },{"$set": {"name": name }})
+        print(FID)
+        FID += 1
+    """
+
     app.run(threaded=True, host='0.0.0.0', port=localport)
     #app.run(threaded=True, port=localport)
 

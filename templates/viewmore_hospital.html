@@ -1,0 +1,30 @@
+<a href="/hospital/mainpage">Hospital Search</a></br>
+<a href="/mainpage">Main</a></br>
+<div>
+    {{hospital["properties"]["NAME"]}}</br>
+    {{hospital["properties"]["ADDRESS"]}}</br>
+    {{hospital["properties"]["CITY"]}}</br>
+    {{hospital["properties"]["STATE"]}}</br>
+    {{hospital["properties"]["ZIP"]}}</br>
+    {{hospital["properties"]["TELEPHONE"]}}</br>
+    {{hospital["properties"]["STATUS"]}}</br>
+    {{hospital["properties"]["SOURCE"]}}</br></br></br>
+</div>
+<div>
+    <h3>below is the comment list</h3><br>
+    {% for comment in comment_list %}
+        <a>{{comment.content}}</a></br>
+        <a href="/id/{{comment.username}}">{{comment.username}}</a></br>
+    {% endfor %}
+</div>
+</br>
+</br>
+<div>
+    <form method="POST" action="/viewmore/hospital/{{hospital.name}}">
+        <div class="form-group">
+            <label>comment here</label>
+            <input type="text" class="form-control" id="comment" name="comment" placeholder="comment">
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
