@@ -145,7 +145,13 @@ def index():
 @app.route('/mainpage/', methods=['GET','POST'])
 def mainpage():
     if request.method == 'GET':
-        return render_template('mainpage.html', username = session.get('username'))
+        users = mongo.db.users
+        login_user = users.find_one({'username' : session.get('username')})
+        if not session.get("username") is None:
+            notification = login_user["notification"]
+            return render_template('mainpage.html', username = session.get('username'), notification = notification)
+        else:
+            return render_template('mainpage.html', username = session.get('username'))
 
 @app.route('/posts/', methods=['GET','POST'])
 def posts():
@@ -247,7 +253,11 @@ def register():
                 'location': None,
                 'hometown': None,
                 'school': None,
-                'company': None
+                'company': None,
+                'notification': {
+                    "number": 0,
+                    "list": []
+                }
                 })
             session['username'] = request.form['username']
             return redirect('/mainpage')
@@ -290,7 +300,12 @@ def api_register():
                 'location': None,
                 'hometown': None,
                 'school': None,
-                'company': None
+                'company': None,
+                'notification': {
+                    "number": 0,
+                    "list": []
+                }
+
             })
             session['username'] = username
             send_json['check'] = username
@@ -513,29 +528,85 @@ def viewmore(post_id):
     if request.method == "GET":
         post = collection.find_one({"_id": ObjectId(str(post_id))})
         comment_list = post['comment_list']
-
-
         return render_template('viewmore.html', post = post, comment_list = comment_list, _id = ObjectId(str(post_id)))
+    
+@app.route("/viewmore/<post_id>/<reply_name>", methods = ["POST"])
+def viewmore_reply(post_id, reply_name):
+    if session.get("username") == None:
+        return "U need to sign in first"
+
+    if reply_name != "no_reply":
+        comment = request.form.get("comment")
+        username = session.get('username')
+        just_inserted_id = collection_comment.insert_one({"content": comment, "username": username, "reply_name": reply_name}).inserted_id
+
+        post = collection.find_one({"_id": ObjectId(str(post_id))})
+        comment_list = post['comment_list']
+        comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username, 'reply_name': reply_name})
+
+        if (session.get("username") != reply_name ):
+            post_author_username = reply_name
+            users = mongo.db.users
+            post_author = users.find_one({"username": post_author_username})
+            post_author_notification = post_author['notification']
+            new_notification = {
+                "number": 0,
+                "list": []
+            }
+
+            new_notification["number"] = post_author_notification["number"] + 1
+            new_notification["list"] = post_author_notification["list"]
+            new_notification["list"].append(post_id)
+            users.update_one({"username": post_author_username},{"$set": {"notification": new_notification}})
+
+        collection.update_one({"_id": ObjectId(str(post_id))},{"$set": {"comment_list": comment_list}})
+
+        next_page = "/viewmore/" + str(post_id)
+        return redirect(next_page)
     else:
-        if session.get("username") == None:
-            return "U need to sign in first"
-        else:
-            comment = request.form.get("comment")
-            username = session.get('username')
-            just_inserted_id = collection_comment.insert_one({"content": comment, "username": username}).inserted_id
+        comment = request.form.get("comment")
+        username = session.get('username')
+        just_inserted_id = collection_comment.insert_one({"content": comment, "username": username, "reply_name": None}).inserted_id
 
-            post = collection.find_one({"_id": ObjectId(str(post_id))})
-            comment_list = post['comment_list']
-            comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username})
+        post = collection.find_one({"_id": ObjectId(str(post_id))})
+        comment_list = post['comment_list']
+        comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username, "reply_name": None})
 
-            collection.update_one({"_id": ObjectId(str(post_id))},{"$set": {"comment_list": comment_list}})
-            next_page = "/viewmore/" + str(post_id)
-            return redirect(next_page)
+        if (session.get("username") != post["author"] ):
+            post_author_username = post["author"]
+            users = mongo.db.users
+            post_author = users.find_one({"username": post_author_username})
+            post_author_notification = post_author['notification']
+            new_notification = {
+                "number": 0,
+                "list": []
+            }
+            new_notification["number"] = post_author_notification["number"] + 1
+            new_notification["list"] = post_author_notification["list"]
+            new_notification["list"].append(post_id)
+            users.update_one({"username": post_author_username},{"$set": {"notification": new_notification}})
+
+        collection.update_one({"_id": ObjectId(str(post_id))},{"$set": {"comment_list": comment_list}})
+
+        next_page = "/viewmore/" + str(post_id)
+        return redirect(next_page)
 
             
-
-        
-
+@app.route("/notification", methods = ["GET", "POST"])
+def notification():
+    users = mongo.db.users
+    login_user = users.find_one({'username' : session.get('username')})
+    notification = login_user["notification"]
+    if (notification['number'] == 0):
+        return "You dont have any notification"
+    else:
+        notification_list = notification["list"]
+        clear_notification: {
+            "number": 0,
+            "list": []
+        }
+        users.update_one({'username' : session.get('username')},{"$set": {"notification": {"number": 0, "list": [] } }})
+        return render_template("notification.html", notification_list = notification_list)
 
 
 
@@ -675,6 +746,12 @@ def main():
         collection_hospitals.update({"_id": ObjectId(str(hospital['_id'])) },{"$set": {"name": name }})
         print(FID)
         FID += 1
+
+    """
+    """
+    users = mongo.db.users
+    for user in users.find():
+        users.update({"username": user['username']},{"$set": {"notification": 0}})
     """
 
     app.run(threaded=True, host='0.0.0.0', port=localport)

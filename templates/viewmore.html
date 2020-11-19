@@ -7,12 +7,26 @@
 <h>Below are the comments</h></br>
 </br></br>
 {% for comment in comment_list %}
-    {{comment.content}}</br>
-    <a href = "/id/{{comment.username}}">{{comment.username}}</a></br></br>
+
+    <a href = "/id/{{comment.username}}">{{comment.username}}</a>
+    {% if comment.reply_name != NULL %}
+    <a>reply to {{comment.reply_name}}</a>
+    {% endif %}
+    </br>
+    <a>{{comment.content}}</a></br>
+
+
+    <form method="POST" action="/viewmore/{{_id}}/{{comment.username}}">
+        <div class="form-group">
+            <input type="text" class="form-control" id="comment" name="comment" placeholder="reply">
+        </div>
+        <button type="submit" class="btn btn-primary">reply</button>
+    </form>
+
 {% endfor %}
 </br>
 
-<form method="POST" action="/viewmore/{{_id}}">
+<form method="POST" action="/viewmore/{{_id}}/no_reply">
     <div class="form-group">
         <label>comment here</label>
         <input type="text" class="form-control" id="comment" name="comment" placeholder="comment">
