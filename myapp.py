@@ -37,6 +37,7 @@ database = client['hospital_post']
 database_hospital_info = client['hospital_api']
 collection = database['post_db_1']
 collection_comment = database['comment_db_1']
+collection_reply = database['reply_db_1']
 collection_hospitals = database_hospital_info['hospital_db_1']
 collection_hospital_comments = database_hospital_info['hospital_comment_db_1']
 app.config['MONGO_DBNAME'] = 'user_db_1'
@@ -530,19 +531,35 @@ def viewmore(post_id):
         comment_list = post['comment_list']
         return render_template('viewmore.html', post = post, comment_list = comment_list, _id = ObjectId(str(post_id)))
     
-@app.route("/viewmore/<post_id>/<reply_name>", methods = ["POST"])
-def viewmore_reply(post_id, reply_name):
+@app.route("/viewmore/<post_id>/<reply_name>/<comment_id>", methods = ["POST"])
+def viewmore_reply(post_id, reply_name, comment_id):
     if session.get("username") == None:
         return "U need to sign in first"
 
     if reply_name != "no_reply":
+
         comment = request.form.get("comment")
         username = session.get('username')
-        just_inserted_id = collection_comment.insert_one({"content": comment, "username": username, "reply_name": reply_name}).inserted_id
+        reply_id = collection_reply.insert_one({"content": comment, "username": username, "reply_name": reply_name, "comment_id": comment_id}).inserted_id
 
         post = collection.find_one({"_id": ObjectId(str(post_id))})
         comment_list = post['comment_list']
-        comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username, 'reply_name': reply_name})
+        for comment in comment_list:
+            if comment_id == comment["_id"]:
+                reply_list = comment["reply_list"]
+                reply_list.append({
+                    "reply_id": ObjectId(str(reply_id)),
+                    "content": comment,
+                    "username": username,
+                    "reply_name": reply_name,
+                    "comment_id": ObjectId(str(comment_id))
+                })
+                new_comment = comment 
+                new_comment["reply_list"] = reply_list
+                collection_comment.update({"_id": ObjectId(str(comment_id))},{"$set": { }})
+
+
+        #comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username, 'reply_name': reply_name})
 
         if (session.get("username") != reply_name ):
             post_author_username = reply_name
@@ -556,21 +573,30 @@ def viewmore_reply(post_id, reply_name):
 
             new_notification["number"] = post_author_notification["number"] + 1
             new_notification["list"] = post_author_notification["list"]
-            new_notification["list"].append(post_id)
+            #new_notification["list"].append(post_id)
+            new_notification["list"].append({
+                "post_id": post_id,
+                "type": "reply",
+                "content": comment,
+                "username": username, 
+                "reply_name": reply_name
+            })
             users.update_one({"username": post_author_username},{"$set": {"notification": new_notification}})
 
         collection.update_one({"_id": ObjectId(str(post_id))},{"$set": {"comment_list": comment_list}})
 
         next_page = "/viewmore/" + str(post_id)
         return redirect(next_page)
+        
     else:
+
         comment = request.form.get("comment")
         username = session.get('username')
-        just_inserted_id = collection_comment.insert_one({"content": comment, "username": username, "reply_name": None}).inserted_id
+        comment_id = collection_comment.insert_one({"content": comment, "username": username, "reply_list": []}).inserted_id
 
         post = collection.find_one({"_id": ObjectId(str(post_id))})
         comment_list = post['comment_list']
-        comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username, "reply_name": None})
+        comment_list.append({'comment_id':ObjectId(str(comment_id)),'content': comment, 'username': username, "reply_list": []})
 
         if (session.get("username") != post["author"] ):
             post_author_username = post["author"]
@@ -583,7 +609,13 @@ def viewmore_reply(post_id, reply_name):
             }
             new_notification["number"] = post_author_notification["number"] + 1
             new_notification["list"] = post_author_notification["list"]
-            new_notification["list"].append(post_id)
+            new_notification["list"].append({
+                "post_id": post_id,
+                "type": "comment",
+                "content": comment,
+                "username": username, 
+                "reply_name": None
+            })
             users.update_one({"username": post_author_username},{"$set": {"notification": new_notification}})
 
         collection.update_one({"_id": ObjectId(str(post_id))},{"$set": {"comment_list": comment_list}})
@@ -601,6 +633,7 @@ def notification():
         return "You dont have any notification"
     else:
         notification_list = notification["list"]
+        notification_content_list = []
         clear_notification: {
             "number": 0,
             "list": []
@@ -648,6 +681,40 @@ def hospital(element):
                 return "name not found"
             else:
                 return render_template('hospital_name.html', hospitals = return_hospitals)
+    return "what happended?"
+
+@app.route("/api/hospital/<element>", methods = ["GET", "POST"])
+def api_hospital(element):
+    if request.method == "GET":
+        return render_template('hospital.html')
+    else:
+        response_json = request.get_json(force = True)
+        return_hospitals = { 
+                "hospital": []
+            }
+        if element == 'zip_code':
+            zip_code = response_json['element']
+            print(zip_code)
+            for hospital in collection_hospitals.find():
+                if str(zip_code) == str(hospital['properties']['ZIP']):
+                    print("yes")
+                    return_hospitals["hospital"].append(hospital)
+                    send_to_json = json.loads(json_util.dumps(return_hospitals))
+                    return send_to_json
+            send_to_json = json.loads(json_util.dumps(return_hospitals))
+            return send_to_json
+        if element == 'name':
+            name = response_json['element']
+            for hospital in collection_hospitals.find():
+                if name.lower() in hospital['properties']['NAME'].lower():
+                    return_hospitals["hospital"].append(hospital)
+
+            if len(return_hospitals) == 0:
+                send_to_json = json.loads(json_util.dumps(return_hospitals))
+                return send_to_json
+            else:
+                send_to_json = json.loads(json_util.dumps(return_hospitals))
+                return send_to_json
     return "what happended?"
 
 @app.route("/hospital/viewmore/<hos_name>", methods = ["GET", "POST"])
