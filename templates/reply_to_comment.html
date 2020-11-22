@@ -1,0 +1,11 @@
+{% for reply in reply_list %}
+<a href = "/id/{{reply.username}}">{{reply.username}} </a>
+<a>reply to {{reply.reply_name}}</a></br>
+<a>{{reply.content}}</a></br>
+<form method="POST" action="/reply_to_comment/{{comment_id}}/{{reply.username}}">
+    <div class="form-group">
+        <input type="text" class="form-control" id="reply" name="reply">
+    </div>
+    <button type="submit" class="btn btn-primary">reply to him/her</button>
+</form>
+{% endfor %}

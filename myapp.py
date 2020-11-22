@@ -33,13 +33,13 @@ DEBUG=True
 #uri = "mongodb://0.0.0.0:27017"
 uri = cloud_url
 client = pymongo.MongoClient([uri])
-database = client['hospital_post']
-database_hospital_info = client['hospital_api']
-collection = database['post_db_1']
-collection_comment = database['comment_db_1']
-collection_reply = database['reply_db_1']
-collection_hospitals = database_hospital_info['hospital_db_1']
-collection_hospital_comments = database_hospital_info['hospital_comment_db_1']
+database_post = client['posts']
+database_hospital = client['hospitals']
+collection_post = database_post['posts']
+collection_post_comment = database_post['comments']
+collection_post_reply = database_post['replys']
+collection_hospital = database_hospital['hospital_db_1']
+collection_hospital_comment = database_hospital['hospital_comment_db_1']
 app.config['MONGO_DBNAME'] = 'user_db_1'
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 #app.config['MONGO_URI'] = 'mongodb://0.0.0.0:27017/user_db_1'
@@ -157,14 +157,14 @@ def mainpage():
 @app.route('/posts/', methods=['GET','POST'])
 def posts():
     if request.method == 'GET':
-        posts = collection.find({})
+        posts = collection_post.find({})
         return render_template('posts.html', post_database = posts)
 
 
 @app.route('/api/posts', methods = ['GET','POST'])
 def api_posts():
     if request.method == 'GET':
-        posts = collection.find({})
+        posts = collection_post.find({})
         response = {}
         #for post in posts:
         #    new_num = "post_" + str(num)
@@ -201,7 +201,7 @@ def write():
                 "time": date_time,
                 "comment_list": []
             }
-            collection.insert(new_post)
+            collection_post.insert(new_post)
             return redirect('/posts')
         else:
             return "U need to login first"
@@ -228,7 +228,7 @@ def api_write():
         "time": date_time,
         "comment_list": []
     }
-    collection.insert(new_post)
+    collection_post.insert(new_post)
     send_json = {}
     
     send_json['check'] = 'True'
@@ -385,14 +385,14 @@ def api_check_status():
 
 @app.route("/id/<username>")
 def other_user_page(username):
-    posts = collection.find({"author": username})
+    posts = collection_post.find({"author": username})
     users = mongo.db.users
     user = users.find_one({'username' : username})
     return render_template('other_user_page.html', username = username, post_database = posts, user = user)
 
 @app.route("/api/id/<username>")
 def api_other_user_page(username):
-    posts = collection.find({"author": username})
+    posts = collection_post.find({"author": username})
     response = {}
     #for post in posts:
     #    new_num = "post_" + str(num)
@@ -407,7 +407,7 @@ def login_user_page(username):
     if not session.get("username") is None:
         users = mongo.db.users
         login_user = users.find_one({'username' : session.get('username')})
-        posts = collection.find({"author": login_user['username']})
+        posts = collection_post.find({"author": login_user['username']})
         return render_template('login_user_page.html', user = login_user, post = posts)
         
 
@@ -417,7 +417,7 @@ def api_login_user_page(username):
     users = mongo.db.users
     #login_user = users.find_one({'username' : session.get('username')})
     login_user = users.find_one({'username' : username})
-    posts = collection.find({"author": login_user['username']})
+    posts = collection_post.find({"author": login_user['username']})
     response = {}
     response["posts"] = posts
     response["profile"] = login_user
@@ -527,9 +527,18 @@ def personalize_element(username,element):
 @app.route("/viewmore/<post_id>", methods = ["POST", "GET"])
 def viewmore(post_id):
     if request.method == "GET":
-        post = collection.find_one({"_id": ObjectId(str(post_id))})
+        post = collection_post.find_one({"_id": ObjectId(str(post_id))})
         comment_list = post['comment_list']
-        return render_template('viewmore.html', post = post, comment_list = comment_list, _id = ObjectId(str(post_id)))
+        visual_comment = []
+        for comment in comment_list:
+            each_comment = collection_post_comment.find_one({"_id": ObjectId(str(comment))})
+            visual_comment.append({
+                "content": each_comment['content'],
+                "username": each_comment["username"],
+                "num_of_reply": len(each_comment["reply_list"]),
+                "comment_id": ObjectId(str(comment))
+            })
+        return render_template('viewmore.html', post = post, comment_list = visual_comment, _id = ObjectId(str(post_id)))
     
 @app.route("/viewmore/<post_id>/<reply_name>/<comment_id>", methods = ["POST"])
 def viewmore_reply(post_id, reply_name, comment_id):
@@ -537,28 +546,14 @@ def viewmore_reply(post_id, reply_name, comment_id):
         return "U need to sign in first"
 
     if reply_name != "no_reply":
-
         comment = request.form.get("comment")
         username = session.get('username')
-        reply_id = collection_reply.insert_one({"content": comment, "username": username, "reply_name": reply_name, "comment_id": comment_id}).inserted_id
-
-        post = collection.find_one({"_id": ObjectId(str(post_id))})
-        comment_list = post['comment_list']
-        for comment in comment_list:
-            if comment_id == comment["_id"]:
-                reply_list = comment["reply_list"]
-                reply_list.append({
-                    "reply_id": ObjectId(str(reply_id)),
-                    "content": comment,
-                    "username": username,
-                    "reply_name": reply_name,
-                    "comment_id": ObjectId(str(comment_id))
-                })
-                new_comment = comment 
-                new_comment["reply_list"] = reply_list
-                collection_comment.update({"_id": ObjectId(str(comment_id))},{"$set": { }})
-
-
+        reply_id = collection_post_reply.insert_one({"content": comment, "username": username, "reply_name": reply_name}).inserted_id
+        reply_comment = collection_post_comment.find_one({"_id": ObjectId(str(comment_id))})
+        new_list = []
+        new_list = reply_comment["reply_list"]
+        new_list.append(reply_id)
+        collection_post_comment.update_one({"_id": ObjectId(str(comment_id))}, {"$set": {"reply_list": new_list}})
         #comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username, 'reply_name': reply_name})
 
         if (session.get("username") != reply_name ):
@@ -575,15 +570,13 @@ def viewmore_reply(post_id, reply_name, comment_id):
             new_notification["list"] = post_author_notification["list"]
             #new_notification["list"].append(post_id)
             new_notification["list"].append({
-                "post_id": post_id,
+                "comment_id": comment_id,
                 "type": "reply",
                 "content": comment,
                 "username": username, 
                 "reply_name": reply_name
             })
             users.update_one({"username": post_author_username},{"$set": {"notification": new_notification}})
-
-        collection.update_one({"_id": ObjectId(str(post_id))},{"$set": {"comment_list": comment_list}})
 
         next_page = "/viewmore/" + str(post_id)
         return redirect(next_page)
@@ -592,11 +585,11 @@ def viewmore_reply(post_id, reply_name, comment_id):
 
         comment = request.form.get("comment")
         username = session.get('username')
-        comment_id = collection_comment.insert_one({"content": comment, "username": username, "reply_list": []}).inserted_id
+        comment_id = collection_post_comment.insert_one({"content": comment, "username": username, "reply_list": []}).inserted_id
 
-        post = collection.find_one({"_id": ObjectId(str(post_id))})
+        post = collection_post.find_one({"_id": ObjectId(str(post_id))})
         comment_list = post['comment_list']
-        comment_list.append({'comment_id':ObjectId(str(comment_id)),'content': comment, 'username': username, "reply_list": []})
+        comment_list.append(comment_id)
 
         if (session.get("username") != post["author"] ):
             post_author_username = post["author"]
@@ -618,12 +611,64 @@ def viewmore_reply(post_id, reply_name, comment_id):
             })
             users.update_one({"username": post_author_username},{"$set": {"notification": new_notification}})
 
-        collection.update_one({"_id": ObjectId(str(post_id))},{"$set": {"comment_list": comment_list}})
+        collection_post.update_one({"_id": ObjectId(str(post_id))},{"$set": {"comment_list": comment_list}})
 
         next_page = "/viewmore/" + str(post_id)
         return redirect(next_page)
 
             
+@app.route("/reply_to_comment/<comment_id>/<reply_name>", methods = ["GET", "POST"])
+def reply_to_comment(comment_id, reply_name):
+    if request.method == "GET":
+        comment = collection_post_comment.find_one({"_id": ObjectId(str(comment_id)) })
+        reply_list = comment["reply_list"]
+        visual_reply_list = []
+        for reply in reply_list:
+            each_reply = collection_post_reply.find_one({"_id": ObjectId(str(reply)) })
+            visual_reply_list.append({
+                "username": each_reply["username"],
+                "reply_name": each_reply["reply_name"],
+                "content": each_reply["content"]
+            })
+        return render_template("reply_to_comment.html", reply_list = visual_reply_list, comment_id = comment_id)
+    else:
+        comment = request.form.get("reply")
+        username = session.get('username')
+        reply_id = collection_post_reply.insert_one({"content": comment, "username": username, "reply_name": reply_name}).inserted_id
+        reply_comment = collection_post_comment.find_one({"_id": ObjectId(str(comment_id))})
+        new_list = []
+        new_list = reply_comment["reply_list"]
+        new_list.append(reply_id)
+        collection_post_comment.update_one({"_id": ObjectId(str(comment_id))}, {"$set": {"reply_list": new_list}})
+        #comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username, 'reply_name': reply_name})
+
+        if (session.get("username") != reply_name ):
+            post_author_username = reply_name
+            users = mongo.db.users
+            post_author = users.find_one({"username": post_author_username})
+            post_author_notification = post_author['notification']
+            new_notification = {
+                "number": 0,
+                "list": []
+            }
+
+            new_notification["number"] = post_author_notification["number"] + 1
+            new_notification["list"] = post_author_notification["list"]
+            #new_notification["list"].append(post_id)
+            new_notification["list"].append({
+                "comment_id": comment_id,
+                "type": "reply",
+                "content": comment,
+                "username": username, 
+                "reply_name": reply_name
+            })
+            users.update_one({"username": post_author_username},{"$set": {"notification": new_notification}})
+
+        next_page = "/reply_to_comment/" + comment_id + "/" + reply_name
+        return redirect(next_page)
+        
+
+
 @app.route("/notification", methods = ["GET", "POST"])
 def notification():
     users = mongo.db.users
@@ -646,7 +691,7 @@ def notification():
 
 @app.route("/api/viewmore/<post_id>")
 def api_viewmore(post_id):
-    post = collection.find_one({"_id": ObjectId(str(post_id))})
+    post = collection_post.find_one({"_id": ObjectId(str(post_id))})
     #print(post.title)
     response = {}
 
@@ -665,7 +710,7 @@ def hospital(element):
         if element == 'zip_code':
             return_hospitals = []
             zip_code = request.form.get('zip_code')
-            for hospital in collection_hospitals.find():
+            for hospital in collection_hospital.find():
                 if zip_code == hospital['properties']['ZIP']:
                     return_hospitals.append(hospital['properties']['NAME'])
                     return render_template('hospital_name.html', hospitals = return_hospitals)
@@ -673,7 +718,7 @@ def hospital(element):
         if element == 'name':
             return_hospitals = []
             name = request.form.get('name')
-            for hospital in collection_hospitals.find():
+            for hospital in collection_hospital.find():
                 if name.lower() in hospital['properties']['NAME'].lower():
                     return_hospitals.append(hospital['properties']['NAME'])
 
@@ -695,7 +740,7 @@ def api_hospital(element):
         if element == 'zip_code':
             zip_code = response_json['element']
             print(zip_code)
-            for hospital in collection_hospitals.find():
+            for hospital in collection_hospital.find():
                 if str(zip_code) == str(hospital['properties']['ZIP']):
                     print("yes")
                     return_hospitals["hospital"].append(hospital)
@@ -705,7 +750,7 @@ def api_hospital(element):
             return send_to_json
         if element == 'name':
             name = response_json['element']
-            for hospital in collection_hospitals.find():
+            for hospital in collection_hospital.find():
                 if name.lower() in hospital['properties']['NAME'].lower():
                     return_hospitals["hospital"].append(hospital)
 
@@ -742,13 +787,13 @@ def hospital_viewmore(hos_name):
         else:
             comment = request.form.get("comment")
             username = session.get('username')
-            just_inserted_id = collection_hospital_comments.insert_one({"content": comment, "username": username}).inserted_id
+            just_inserted_id = collection_hospital_comment.insert_one({"content": comment, "username": username}).inserted_id
 
-            hospital = collection_hospitals.find_one({"_id": ObjectId(str(hospital_id))})
+            hospital = collection_hospital.find_one({"_id": ObjectId(str(hospital_id))})
             comment_list = hospital['comment_list']
             comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username})
 
-            collection_hospitals.update_one({"_id": ObjectId(str(hospital_id))},{"$set": {"comment_list": comment_list}})
+            collection_hospital.update_one({"_id": ObjectId(str(hospital_id))},{"$set": {"comment_list": comment_list}})
             next_page = "/hospital/viewmore/" + str(hospital_id)
             return redirect(next_page)
             
@@ -758,7 +803,7 @@ def hospital_viewmore(hos_name):
 @app.route("/viewmore/hospital/<name>", methods = ["GET", "POST"])
 def viewmore_hospital(name):
     if request.method == "GET":
-        hospital = collection_hospitals.find_one({'name': name.upper()})
+        hospital = collection_hospital.find_one({'name': name.upper()})
         #print(hospital)
         comment_list = hospital['comment_list']
         return render_template('viewmore_hospital.html', hospital = hospital, comment_list = comment_list, hospital_name = hospital['name'])
@@ -768,13 +813,13 @@ def viewmore_hospital(name):
         else:
             comment = request.form.get("comment")
             username = session.get('username')
-            just_inserted_id = collection_hospital_comments.insert_one({"content": comment, "username": username}).inserted_id
+            just_inserted_id = collection_hospital_comment.insert_one({"content": comment, "username": username}).inserted_id
 
-            hospital = collection_hospitals.find_one({"name": name})
+            hospital = collection_hospital.find_one({"name": name})
             comment_list = hospital['comment_list']
             comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username})
 
-            collection_hospitals.update_one({"name": name},{"$set": {"comment_list": comment_list}})
+            collection_hospital.update_one({"name": name},{"$set": {"comment_list": comment_list}})
             next_page = "/viewmore/hospital/" + name
             return redirect(next_page)
         
@@ -792,7 +837,7 @@ def viewmore_hospital(name):
                     break
             return render_template("hospital_viewmore.html", hospital = result_hospital)
     
-        collection_hospitals.find({})
+        collection_hospital.find({})
         """
 
 
@@ -808,9 +853,9 @@ def main():
     
     """
     FID = 1
-    for hospital in collection_hospitals.find():
+    for hospital in collection_hospital.find():
         name = hospital['properties']['NAME']
-        collection_hospitals.update({"_id": ObjectId(str(hospital['_id'])) },{"$set": {"name": name }})
+        collection_hospital.update({"_id": ObjectId(str(hospital['_id'])) },{"$set": {"name": name }})
         print(FID)
         FID += 1
 

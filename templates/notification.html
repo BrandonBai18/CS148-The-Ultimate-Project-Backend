@@ -1,11 +1,13 @@
 {% for notification in notification_list %}
 
 {% if notification.type == "reply" %}
-<a>{{notification.username}} reply to you: {{notification.content}}</a>
+<a>{{notification.username}} reply to you: {{notification.content}}</a></br>
+<a href = "/reply_to_comment/{{notification.comment_id}}/notification.username">check</a></br>
 {% elif notification.type == "comment" %}
-<a>{{notification.username}} comment on your post: {{notification.content}}</a>
+<a>{{notification.username}} comment on your post: {{notification.content}}</a></br>
+<a href = "/viewmore/{{notification.post_id}}">check</a></br>
 {% endif%}
 </br>
-<a href = "/viewmore/{{notification.post_id}}">check</a></br>
+
 
 {% endfor %}

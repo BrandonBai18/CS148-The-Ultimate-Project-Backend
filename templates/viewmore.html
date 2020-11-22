@@ -9,16 +9,12 @@
 {% for comment in comment_list %}
 
     <a href = "/id/{{comment.username}}">{{comment.username}}</a>
-    {% if comment.reply_name != None %}
-    <a>reply to {{comment.reply_name}}</a>
-    {% elif comment.reply_name == None %}
-    <a>comment</a>
-    {% endif %} 
     </br>
     <a>{{comment.content}}</a></br>
-
-
-    <form method="POST" action="/viewmore/{{_id}}/{{comment.username}}/{{comment._id}}">
+    {% if comment.num_of_reply != 0 %}
+    <a href="/reply_to_comment/{{comment.comment_id}}/{{comment.username}}">There are {{comment.num_of_reply}} to this comment</a></br>
+    {% endif %}
+    <form method="POST" action="/viewmore/{{_id}}/{{comment.username}}/{{comment.comment_id}}">
         <div class="form-group">
             <input type="text" class="form-control" id="comment" name="comment" placeholder="reply">
         </div>
