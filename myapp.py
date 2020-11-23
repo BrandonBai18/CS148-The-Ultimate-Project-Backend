@@ -824,23 +824,30 @@ def viewmore_hospital(name):
             collection_hospital.update_one({"name": name},{"$set": {"comment_list": comment_list}})
             next_page = "/viewmore/hospital/" + name
             return redirect(next_page)
-        
-        """
-        if len(hos_name) == 5:
-            for hospital in hos_info['features']:
-                if hospital['properties']['ZIP'] == hos_name:
-                    result_hospital = hospital
-                    break
-            return render_template("hospital_viewmore.html", hospital = result_hospital)
+
+
+@app.route("/api/viewmore/hospital/<name>", methods = ["GET", "POST"])
+def api_viewmore_hospital(name):
+    if request.method == "GET":
+        hospital = collection_hospital.find_one({'name': name.upper()})
+        #print(hospital)
+        send_to_json = json.loads(json_util.dumps(hospital))
+        return send_to_json
+    else:
+        if session.get("username") == None:
+            return "U need to sign in first"
         else:
-            for hospital in hos_info['features']:
-                if hos_name.lower() in hospital['properties']['NAME'].lower():
-                    result_hospital = hospital
-                    break
-            return render_template("hospital_viewmore.html", hospital = result_hospital)
-    
-        collection_hospital.find({})
-        """
+            comment = request.form.get("comment")
+            username = session.get('username')
+            just_inserted_id = collection_hospital_comment.insert_one({"content": comment, "username": username}).inserted_id
+
+            hospital = collection_hospital.find_one({"name": name})
+            comment_list = hospital['comment_list']
+            comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username})
+
+            collection_hospital.update_one({"name": name},{"$set": {"comment_list": comment_list}})
+            next_page = "/viewmore/hospital/" + name
+            return redirect(next_page)
 
 
 @app.route("/surgery", methods = ["GET", "POST"])
