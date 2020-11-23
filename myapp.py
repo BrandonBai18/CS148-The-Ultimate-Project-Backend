@@ -870,12 +870,11 @@ def main():
     """
     FID = 1
     for hospital in collection_hospital.find():
-        name = hospital['properties']['NAME']
-        collection_hospital.update({"_id": ObjectId(str(hospital['_id'])) },{"$set": {"name": name }})
+        collection_hospital.update_one({"_id": ObjectId(str(hospital['_id'])) },{"$set": {"post_list": [] }})
         print(FID)
         FID += 1
-
-
+    """
+    """
 
     for surgery in collection_surgery.find():
         collection_surgery.update_one({"_id": ObjectId(str(surgery['_id']))},{"$set": {"list": []}})
