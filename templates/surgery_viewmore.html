@@ -1,0 +1,11 @@
+<a>This is introduction page of {{name}}</a></br>
+{% for post in posts %}
+<div>
+    <h2>{{ post.title }}</h2>
+    <span>>{{ post.text }}</span></br>
+    <img src = "{{ post.image }}" ></br>
+    <a href="/viewmore/{{post._id}}">View More</a></br>
+    <a href="/id/{{post.author}}">{{post.author}}</a></br>
+    <a>{{post.time}}</a>
+</div>
+{% endfor %} 

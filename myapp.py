@@ -35,6 +35,8 @@ uri = cloud_url
 client = pymongo.MongoClient([uri])
 database_post = client['posts']
 database_hospital = client['hospital_api']
+database_surgery = client['surgery']
+collection_surgery = database_surgery["surgeries"]
 collection_post = database_post['posts']
 collection_post_comment = database_post['comments']
 collection_post_reply = database_post['replys']
@@ -841,6 +843,20 @@ def viewmore_hospital(name):
         """
 
 
+@app.route("/surgery", methods = ["GET", "POST"])
+def surgery():
+    return render_template("surgery.html")
+
+@app.route("/surgery/<name>", methods = ["GET"])
+def surgery_name(name):
+    posts = []
+    result_surgery = collection_surgery.find_one({"name": name})
+    result_surgery_list = result_surgery["list"]
+    for post in result_surgery_list:
+        posts.append(collection_post.find_one({"_id": post}))
+    return render_template('surgery_viewmore.html', name = result_surgery["name"], posts = posts)
+
+
 def main():
     '''The threaded option for concurrent accesses, 0.0.0.0 host says listen to all network interfaces (leaving this off changes this to local (same host) only access, port is the port listened on -- this must be open in your firewall or mapped out if within a Docker container. In Heroku, the heroku runtime sets this value via the PORT environment variable (you are not allowed to hard code it) so set it from this variable and give a default value (8118) for when we execute locally.  Python will tell us if the port is in use.  Start by using a value > 8000 as these are likely to be available.
     '''
@@ -859,8 +875,11 @@ def main():
         print(FID)
         FID += 1
 
-    """
-    """
+
+
+    for surgery in collection_surgery.find():
+        collection_surgery.update_one({"_id": ObjectId(str(surgery['_id']))},{"$set": {"list": []}})
+
     users = mongo.db.users
     for user in users.find():
         users.update({"username": user['username']},{"$set": {"notification": 0}})
