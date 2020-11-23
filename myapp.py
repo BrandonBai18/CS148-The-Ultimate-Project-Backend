@@ -834,20 +834,19 @@ def api_viewmore_hospital(name):
         send_to_json = json.loads(json_util.dumps(hospital))
         return send_to_json
     else:
-        if session.get("username") == None:
-            return "U need to sign in first"
-        else:
-            comment = request.form.get("comment")
-            username = session.get('username')
-            just_inserted_id = collection_hospital_comment.insert_one({"content": comment, "username": username}).inserted_id
+        response_json = request.get_json(force = True)
+        comment = response_json["comment"]
+        username = response_json['username']
+        just_inserted_id = collection_hospital_comment.insert_one({"content": comment, "username": username}).inserted_id
+        hospital = collection_hospital.find_one({"name": name})
+        comment_list = hospital['comment_list']
+        comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username})
+        collection_hospital.update_one({"name": name},{"$set": {"comment_list": comment_list}})
 
-            hospital = collection_hospital.find_one({"name": name})
-            comment_list = hospital['comment_list']
-            comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username})
-
-            collection_hospital.update_one({"name": name},{"$set": {"comment_list": comment_list}})
-            next_page = "/viewmore/hospital/" + name
-            return redirect(next_page)
+        hospital = collection_hospital.find_one({'name': name.upper()})
+        send_to_json = json.loads(json_util.dumps(hospital))
+        return send_to_json
+        
 
 
 @app.route("/surgery", methods = ["GET", "POST"])
