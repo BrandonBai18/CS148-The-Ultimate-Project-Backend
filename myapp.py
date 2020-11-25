@@ -502,6 +502,19 @@ def unfollow_user(follow_username):
     else:
         return "u need to login first"
 
+@app.route("/search_user", methods = ["GET", "POST"])
+def search_user():
+    search_name = request.form.get("username")
+    users = mongo.db.users
+    user_result = []
+    for user in users.find():
+        if search_name.lower() in user["username"].lower():
+            user_result.append(user["username"])
+    print(user_result)
+    if len(user_result) == 0:
+        return "cannot find the user"
+    else:
+        return render_template("search_user_result.html", users = user_result)
 
 @app.route("/personalize/<username>", methods = ['GET', 'POST'])
 def personalize(username):

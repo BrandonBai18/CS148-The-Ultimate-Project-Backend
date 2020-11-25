@@ -12,7 +12,12 @@
             <a href="/hospital/mainpage">Hospital Search</a></br>
             <a href="/surgery">check different surgeries</a></br>
             <a href="/notification">You have {{notification.number}} notifications</a></br>
-
+            <form method="POST" action="/search_user">
+                <div class="form-group">
+                    <input type="text" class="form-control" id="username" name="username" placeholder="name">
+                </div>
+                <button type="submit" class="btn btn-primary">search</button>
+            </form>
 
 
             
@@ -25,6 +30,12 @@
             <a href="/login">Login</a></br>
             <a href="/hospital/mainpage">Hospital Search</a></br>
             <a href="/surgery">check different surgeries</a></br>
+            <form method="POST" action="/search_user">
+                <div class="form-group">
+                    <input type="text" class="form-control" id="username" name="username" placeholder="name">
+                </div>
+                <button type="submit" class="btn btn-primary">search</button>
+            </form>
         {% endif %} 
 
     </body>
