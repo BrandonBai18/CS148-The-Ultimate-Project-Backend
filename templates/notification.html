@@ -6,6 +6,9 @@
 {% elif notification.type == "comment" %}
 <a>{{notification.username}} comment on your post: {{notification.content}}</a></br>
 <a href = "/viewmore/{{notification.post_id}}">check</a></br>
+{% elif notification.type == "follow" %}
+<a>{{notification.username}} start to follow you </a></br>
+<a href = "/id/{{notification.username}}">check</a></br>
 {% endif%}
 </br>
 

@@ -478,6 +478,25 @@ def follow_user(follow_username):
         follow_user_follower['list'].append(login_user['username'])
         users.update_one({"username": follow_user["username"]},{"$set":{"follower": follow_user_follower}})
         users.update_one({"username": login_user['username']},{"$set":{"following": login_user_following}})
+
+        new_notification = {
+                "number": 0,
+                "list": []
+            }
+        post_author_notification = follow_user['notification']
+        new_notification["number"] = post_author_notification["number"] + 1
+        new_notification["list"] = post_author_notification["list"]
+        new_notification["list"].append({
+                "comment_id": 0,
+                "type": "follow",
+                "content": 0,
+                "username": session.get("username"), 
+                "reply_name": 0
+            })
+        users.update_one({"username": follow_username},{"$set": {"notification": new_notification}})
+
+
+
         url = "/id/" + follow_username
         return redirect(url)
     else:
