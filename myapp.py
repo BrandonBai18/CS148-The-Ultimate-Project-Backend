@@ -257,6 +257,14 @@ def register():
                 'hometown': None,
                 'school': None,
                 'company': None,
+                'follower': {
+                    'number': 0,
+                    'list': []
+                },
+                'following': {
+                    'number': 0,
+                    'list': []
+                },
                 'notification': {
                     "number": 0,
                     "list": []
@@ -304,6 +312,14 @@ def api_register():
                 'hometown': None,
                 'school': None,
                 'company': None,
+                'follower': {
+                    'number': 0,
+                    'list': []
+                },
+                'following': {
+                    'number': 0,
+                    'list': []
+                },
                 'notification': {
                     "number": 0,
                     "list": []
@@ -387,10 +403,28 @@ def api_check_status():
 
 @app.route("/id/<username>")
 def other_user_page(username):
+
+    if session.get("username") is None:
+        return render_template('other_user_page.html', username = username, post_database = posts, user = user, check_follow = 0)
+    if username == session.get("username"):
+        return redirect("/id_profile/"+username)
+
     posts = collection_post.find({"author": username})
     users = mongo.db.users
     user = users.find_one({'username' : username})
-    return render_template('other_user_page.html', username = username, post_database = posts, user = user)
+    login_user = users.find_one({'username' : session.get("username")})
+    check_follow = 0
+
+
+    if not (username in login_user["following"]["list"]) and not (username in login_user["follower"]["list"]) :
+        check_follow = 0
+    elif (username in login_user["following"]["list"]) and not (username in login_user["follower"]["list"]) :
+        check_follow = 1
+    elif (username in login_user["following"]["list"]) and (username in login_user["follower"]["list"]) :
+        check_follow = 2
+    elif not (username in login_user["following"]["list"]) and (username in login_user["follower"]["list"]) :
+        check_follow = 3
+    return render_template('other_user_page.html', username = username, post_database = posts, user = user, check_follow = check_follow)
 
 @app.route("/api/id/<username>")
 def api_other_user_page(username):
@@ -425,6 +459,49 @@ def api_login_user_page(username):
     response["profile"] = login_user
     page_sanitized = json.loads(json_util.dumps(response))
     return page_sanitized
+
+@app.route("/follow/<follow_username>")
+def follow_user(follow_username):
+    if not session.get("username") is None:
+        users = mongo.db.users
+        login_user = users.find_one({'username' : session.get('username')})
+        follow_user = users.find_one({'username' : follow_username})
+        login_user_following = login_user['following']
+        follow_user_follower = follow_user['follower']
+
+        if session.get("username") in follow_user_follower['list']:
+            return "u already followed him"
+
+        login_user_following['number'] += 1
+        login_user_following['list'].append(follow_user["username"])
+        follow_user_follower['number'] += 1
+        follow_user_follower['list'].append(login_user['username'])
+        users.update_one({"username": follow_user["username"]},{"$set":{"follower": follow_user_follower}})
+        users.update_one({"username": login_user['username']},{"$set":{"following": login_user_following}})
+        url = "/id/" + follow_username
+        return redirect(url)
+    else:
+        return "u need to login first"
+
+@app.route("/unfollow/<follow_username>")
+def unfollow_user(follow_username):
+    if not session.get("username") is None:
+        users = mongo.db.users
+        login_user = users.find_one({'username' : session.get('username')})
+        follow_user = users.find_one({'username' : follow_username})
+        login_user_following = login_user['following']
+        follow_user_follower = follow_user['follower']
+        login_user_following['number'] += -1
+        login_user_following['list'].remove(follow_user["username"])
+        follow_user_follower['number'] += -1
+        follow_user_follower['list'].remove(login_user['username'])
+        users.update_one({"username": follow_user["username"]},{"$set":{"follower": follow_user_follower}})
+        users.update_one({"username": login_user['username']},{"$set":{"following": login_user_following}})
+        url = "/id/" + follow_username
+        return redirect(url)
+    else:
+        return "u need to login first"
+
 
 @app.route("/personalize/<username>", methods = ['GET', 'POST'])
 def personalize(username):
@@ -872,7 +949,18 @@ def main():
     #Session(app)
 
     localport = int(os.getenv("PORT", 8118))
-    
+
+
+    """
+    users = mongo.db.users
+    for user in users.find():
+        users.update_one({"_id":ObjectId(str(user['_id']))},{ "$set": 
+        {'following':{
+                    'number': 0,
+                    'list': []
+                    } 
+        }})
+    """
     """
     FID = 1
     for hospital in collection_hospital.find():

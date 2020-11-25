@@ -4,8 +4,10 @@
 
 <h>your username: </h>
 {{user.username}}</br></br>
-<h>your _id: </h>
-{{user._id}}</br></br>
+<h>following: </h>
+{{user.following.number}}</br>
+<h>follower: </h>
+{{user.follower.number}}</br>
 
 {% if user.picture != None %}
 <a>Profile picture: </a>

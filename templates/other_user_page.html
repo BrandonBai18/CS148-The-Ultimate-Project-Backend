@@ -1,7 +1,20 @@
 <html>
     <body>
         <h>This is the profile page of </h>
-        {{username}}
+        {{username}}</br>
+        <h>following: </h>
+        {{user.following.number}}</br>
+        <h>follower: </h>
+        {{user.follower.number}}</br>
+        {% if check_follow == 0 %}
+        <a href="/follow/{{username}}">follow</a>
+        {% elif check_follow == 1 %}
+        <a href="/unfollow/{{username}}">unfollow</a>
+        {% elif check_follow == 2 %}
+        <a href="/unfollow/{{username}}">friend - unfollow</a>
+        {% elif check_follow == 3 %}
+        <a href="/follow/{{username}}">follow back</a>
+        {% endif %}
     </body>
     {% if user.picture != None %}
     <a>Profile picture: </a>
