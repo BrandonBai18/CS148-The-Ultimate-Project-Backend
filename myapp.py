@@ -48,7 +48,7 @@ APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 #app.config['MONGO_URI'] = 'mongodb://0.0.0.0:27017/user_db_1'
 app.config['MONGO_URI'] = 'mongodb+srv://Ab990618:Ab990618@cluster0.ztgu2.mongodb.net/user_db_1?retryWrites=true&w=majority'
 mongo = PyMongo(app)
-app.config.update(GEOIPIFY_API_KEY='https://ip-geolocation.whoisxmlapi.com/api/v1?apiKey=at_8XlbpnW37c6IHAEYEn94MjBY1Oe8D&ipAddress=8.8.8.8')
+app.config.update(GEOIPIFY_API_KEY='at_8XlbpnW37c6IHAEYEn94MjBY1Oe8D')
 simple_geoip = SimpleGeoIP(app)
 
 
