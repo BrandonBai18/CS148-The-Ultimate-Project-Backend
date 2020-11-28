@@ -162,6 +162,13 @@ def posts():
         posts = collection_post.find({})
         return render_template('posts.html', post_database = posts)
 
+@app.route('/api/find_post/<post_id>', methods = ['GET'])
+def api_find_post_id(post_id):
+    post = collection_post.find_one({"_id": ObjectId(str(post_id))})
+    send_to_json = json.loads(json_util.dumps(post))
+    return send_to_json
+    
+    
 
 @app.route('/api/posts', methods = ['GET','POST'])
 def api_posts():
@@ -970,6 +977,8 @@ def surgery_name(name):
     for post in result_surgery_list:
         posts.append(collection_post.find_one({"_id": post}))
     return render_template('surgery_viewmore.html', name = result_surgery["name"], posts = posts)
+
+
 
 
 def main():
