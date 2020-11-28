@@ -18,6 +18,7 @@ from bson import json_util, ObjectId
 from bson.objectid import ObjectId
 import datetime
 from werkzeug.utils import secure_filename
+from flask_simple_geoip import SimpleGeoIP
 
 
 
@@ -47,6 +48,8 @@ APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 #app.config['MONGO_URI'] = 'mongodb://0.0.0.0:27017/user_db_1'
 app.config['MONGO_URI'] = 'mongodb+srv://Ab990618:Ab990618@cluster0.ztgu2.mongodb.net/user_db_1?retryWrites=true&w=majority'
 mongo = PyMongo(app)
+app.config.update(GEOIPIFY_API_KEY='https://ip-geolocation.whoisxmlapi.com/api/v1?apiKey=at_8XlbpnW37c6IHAEYEn94MjBY1Oe8D&ipAddress=8.8.8.8')
+simple_geoip = SimpleGeoIP(app)
 
 
 #use this if linking to a reaact app on the same server
@@ -978,8 +981,34 @@ def surgery_name(name):
         posts.append(collection_post.find_one({"_id": post}))
     return render_template('surgery_viewmore.html', name = result_surgery["name"], posts = posts)
 
+@app.route("/following_post")
+def following_post():
+    users = mongo.db.users
+    login_username = session.get("username")
+    login_user = users.find_one({"username": login_username})
+    following_post = []
+    for following in login_user["following"]["list"]:
+        for posts in collection_post.find({"author": following}):
+            following_post.append(posts)
+    return render_template("following_post.html", posts = following_post)
+    
+@app.route("/friend_post")
+def friend_post():
+    users = mongo.db.users
+    login_username = session.get("username")
+    login_user = users.find_one({"username": login_username})
+    friend_post = []
+    for following in login_user["following"]["list"]:
+        if following in login_user["follower"]["list"]:
+            for posts in collection_post.find({"author": following}):
+                friend_post.append(posts)
+    return render_template("following_post.html", posts = friend_post)
 
+@app.route('/get_location')
+def get_location():
+    geoip_data = simple_geoip.get_geoip_data()
 
+    return jsonify(data=geoip_data)
 
 def main():
     '''The threaded option for concurrent accesses, 0.0.0.0 host says listen to all network interfaces (leaving this off changes this to local (same host) only access, port is the port listened on -- this must be open in your firewall or mapped out if within a Docker container. In Heroku, the heroku runtime sets this value via the PORT environment variable (you are not allowed to hard code it) so set it from this variable and give a default value (8118) for when we execute locally.  Python will tell us if the port is in use.  Start by using a value > 8000 as these are likely to be available.
