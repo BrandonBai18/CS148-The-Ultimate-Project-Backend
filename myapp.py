@@ -179,6 +179,21 @@ def api_find_post_id(post_id):
     }
     send_to_json = json.loads(json_util.dumps(send_json))
     return send_to_json
+
+@app.route('/api/find_comment/<comment_id>', methods = ['GET'])
+def api_find_comment_id(comment_id):
+    comment = collection_post_comment.find_one({"_id": ObjectId(str(comment_id))})
+    reply_list_id = comment["reply_list"]
+    reply_list_content = []
+    for reply in reply_list_id:
+        reply_content = collection_post_reply.find_one({"_id": ObjectId(str(reply))})
+        reply_list_content.append(reply_content)
+    send_json = {
+        "comment": comment,
+        "reply": reply_list_content
+    }
+    send_to_json = json.loads(json_util.dumps(send_json))
+    return send_to_json
     
     
 
