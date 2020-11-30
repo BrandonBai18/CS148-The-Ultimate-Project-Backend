@@ -168,7 +168,16 @@ def posts():
 @app.route('/api/find_post/<post_id>', methods = ['GET'])
 def api_find_post_id(post_id):
     post = collection_post.find_one({"_id": ObjectId(str(post_id))})
-    send_to_json = json.loads(json_util.dumps(post))
+    comment_list_id = post["comment_list"]
+    comment_list_content = []
+    for comment in comment_list_id:
+        comment_content = collection_post_comment.find_one({"_id": ObjectId(str(comment))})
+        comment_list_content.append(comment_content)
+    send_json = {
+        "post": post,
+        "comment": comment_list_content
+    }
+    send_to_json = json.loads(json_util.dumps(send_json))
     return send_to_json
     
     
@@ -1004,10 +1013,12 @@ def friend_post():
                 friend_post.append(posts)
     return render_template("following_post.html", posts = friend_post)
 
-@app.route('/get_location')
+@app.route('/get_location/hospital')
 def get_location():
     geoip_data = simple_geoip.get_geoip_data()
-
+    #return_json = jsonify(data=geoip_data)
+    #zip_code = return_json.data.location.postalCode
+    #return zip_code
     return jsonify(data=geoip_data)
 
 def main():
