@@ -55,6 +55,8 @@ simple_geoip = SimpleGeoIP(app)
 #use this if linking to a reaact app on the same server
 #app = Flask(__name__, static_folder='./build', static_url_path='/')
 
+def Reverse(lst): 
+    return [ele for ele in reversed(lst)] 
 
 ### CORS section
 @app.after_request
@@ -169,10 +171,37 @@ def posts():
 def api_find_post_id(post_id):
     post = collection_post.find_one({"_id": ObjectId(str(post_id))})
     comment_list_id = post["comment_list"]
+
+    comment_list_id_2 = []
+    for item in comment_list_id:
+        comment_list_id_2.append(str(item))
+    #comment_list_id = sorted(comment_list_id_2, key=lambda x: x[1] , reverse=True)
+    comment_list_id = Reverse(comment_list_id)
+
     comment_list_content = []
     for comment in comment_list_id:
         comment_content = collection_post_comment.find_one({"_id": ObjectId(str(comment))})
-        comment_list_content.append(comment_content)
+        #reply_list_id = sorted(comment_content["reply_list"]["_id"] , key=lambda x: x[1])
+        
+
+    
+        reply_list = comment_content["reply_list"]
+        reply_list_2 = []
+        for item in reply_list:
+            reply_list_2.append(str(item))
+        #reply_list_id = sorted(reply_list_2, key=lambda x: x[1] , reverse=True)
+        reply_list_id = Reverse(reply_list_2)
+     
+        reply_list_content = []
+        for reply in reply_list_id:
+            reply_content = collection_post_reply.find_one({"_id": ObjectId(str(reply))})
+            reply_list_content.append(reply_content)
+        
+        comment_list_content.append({
+            "content":comment_content,
+            "reply": reply_list_content
+        })
+
     send_json = {
         "post": post,
         "comment": comment_list_content
@@ -200,7 +229,7 @@ def api_find_comment_id(comment_id):
 @app.route('/api/posts', methods = ['GET','POST'])
 def api_posts():
     if request.method == 'GET':
-        posts = collection_post.find({})
+        posts = collection_post.find({}).sort("_id", -1)
         response = {}
         #for post in posts:
         #    new_num = "post_" + str(num)
