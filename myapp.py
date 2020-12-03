@@ -281,6 +281,10 @@ def api_write():
     Text = response_json['text']
     Image = response_json['image']
     login_username = response_json['author']
+    hospitals = response_json['hospital']
+    surgerys = response_json['surgery']
+
+
 
     time_now = datetime.datetime.now()
     date_time = time_now.strftime("%m/%d/%Y")
@@ -293,11 +297,26 @@ def api_write():
         "time": date_time,
         "comment_list": []
     }
-    collection_post.insert(new_post)
+    post_id = collection_post.insert_one(new_post).inserted_id
     send_json = {}
     
     send_json['check'] = 'True'
     send_to_json = json.loads(json_util.dumps(send_json))
+
+
+    for hospital in hospitals:
+        hospital_id = collection_hospital.find_one({"name": hospital.upper()})
+        new_list = hospital_id["post_list"]
+        new_list.append(post_id)
+        collection_hospital.update_one({"name": hospital},{"$set": {"post_list": new_list}})
+
+    for surgery in surgerys:
+        surgery_id = collection_surgery.find_one({"name": surgery})
+        new_list = surgery_id["list"]
+        new_list.append(post_id)
+        collection_surgery.update_one({"name": surgery},{"$set": {"list": new_list}})
+    
+
     return send_to_json
 
 @app.route('/register/', methods=['GET','POST'])
