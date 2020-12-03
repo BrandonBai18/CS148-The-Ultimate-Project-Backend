@@ -284,8 +284,6 @@ def api_write():
     hospitals = response_json['hospital']
     surgerys = response_json['surgery']
 
-
-
     time_now = datetime.datetime.now()
     date_time = time_now.strftime("%m/%d/%Y")
     #login_username = session.get('username')
@@ -295,7 +293,8 @@ def api_write():
         "image": Image,
         "author": login_username,
         "time": date_time,
-        "comment_list": []
+        "comment_list": [],
+        "like_list": []
     }
     post_id = collection_post.insert_one(new_post).inserted_id
     send_json = {}
@@ -764,7 +763,7 @@ def viewmore_reply(post_id, reply_name, comment_id):
     if reply_name != "no_reply":
         comment = request.form.get("comment")
         username = session.get('username')
-        reply_id = collection_post_reply.insert_one({"content": comment, "username": username, "reply_name": reply_name}).inserted_id
+        reply_id = collection_post_reply.insert_one({"content": comment, "username": username, "reply_name": reply_name, "like_list": []}).inserted_id
         reply_comment = collection_post_comment.find_one({"_id": ObjectId(str(comment_id))})
         new_list = []
         new_list = reply_comment["reply_list"]
@@ -801,7 +800,7 @@ def viewmore_reply(post_id, reply_name, comment_id):
 
         comment = request.form.get("comment")
         username = session.get('username')
-        comment_id = collection_post_comment.insert_one({"content": comment, "username": username, "reply_list": []}).inserted_id
+        comment_id = collection_post_comment.insert_one({"content": comment, "username": username, "reply_list": [], "list_list": []}).inserted_id
 
         post = collection_post.find_one({"_id": ObjectId(str(post_id))})
         comment_list = post['comment_list']
@@ -850,7 +849,7 @@ def reply_to_comment(comment_id, reply_name):
     else:
         comment = request.form.get("reply")
         username = session.get('username')
-        reply_id = collection_post_reply.insert_one({"content": comment, "username": username, "reply_name": reply_name}).inserted_id
+        reply_id = collection_post_reply.insert_one({"content": comment, "username": username, "reply_name": reply_name, "like_list": []}).inserted_id
         reply_comment = collection_post_comment.find_one({"_id": ObjectId(str(comment_id))})
         new_list = []
         new_list = reply_comment["reply_list"]
@@ -883,7 +882,38 @@ def reply_to_comment(comment_id, reply_name):
         next_page = "/reply_to_comment/" + comment_id + "/" + reply_name
         return redirect(next_page)
         
+@app.route("/api/click_like/<type>/<item_id>/<user_id>", methods = ["GET"])
+def click_like(type, item_id, user_id):
+    #response_json = request.get_json(force = True)
+    #type = response_json["type"]
+    #item_id = response_json["item_id"]
+    #user_id = response_json["user_id"]
+    if type == "post":
+        item = collection_post.find_one({"_id": ObjectId(str(item_id))})
+    elif type == "comment":
+        item = collection_post_comment.find_one({"_id": ObjectId(str(item_id))})
+    elif type == "reply":
+        item = collection_post_reply.find_one({"_id": ObjectId(str(item_id)) })
 
+    item_like_list = item["like_list"]
+    item_like_number = item["like_number"]
+    item_like_list.append(user_id)
+    item_like_number += 1
+
+    if type == "post":
+        collection_post.update_one({"_id": ObjectId(str(item_id))}, {"$set": {"like_list": item_like_list}})
+        collection_post.update_one({"_id": ObjectId(str(item_id))}, {"$set": {"like_number": item_like_number}})
+    elif type == "comment":
+        collection_post_comment.update_one({"_id": ObjectId(str(item_id))}, {"$set": {"like_list": item_like_list}})
+        collection_post_comment.update_one({"_id": ObjectId(str(item_id))}, {"$set": {"like_number": item_like_number}})
+    elif type == "reply":
+        collection_post_reply.update_one({"_id": ObjectId(str(item_id)) }, {"$set": {"like_list": item_like_list}})
+        collection_post_reply.update_one({"_id": ObjectId(str(item_id))}, {"$set": {"like_number": item_like_number}})
+    
+    send_json = { }
+    send_json['check'] = "True"
+    send_to_json = json.loads(json_util.dumps(send_json))
+    return send_to_json
 
 @app.route("/notification", methods = ["GET", "POST"])
 def notification():
@@ -1135,14 +1165,19 @@ def main():
         print(FID)
         FID += 1
     """
-    """
 
+    """
     for surgery in collection_surgery.find():
         collection_surgery.update_one({"_id": ObjectId(str(surgery['_id']))},{"$set": {"list": []}})
-
+    
     users = mongo.db.users
     for user in users.find():
         users.update({"username": user['username']},{"$set": {"notification": 0}})
+    """
+    """
+    collection_post.update_many({},{ "$set": {"like_number": 0} })
+    collection_post_comment.update_many({},{ "$set": {"like_number": 0} })
+    collection_post_reply.update_many({},{ "$set": {"like_number": 0} })
     """
 
     app.run(threaded=True, host='0.0.0.0', port=localport)
