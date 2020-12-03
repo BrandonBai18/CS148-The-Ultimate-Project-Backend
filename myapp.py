@@ -319,6 +319,29 @@ def api_write():
 
     return send_to_json
 
+@app.route('/api/all_hospitals')
+def all_hospitals():
+    all_hospitals = []
+    for hospital in collection_hospital.find():
+        all_hospitals.append(hospital['name'])
+    send_json = {
+        "hospitals": all_hospitals
+    }
+    send_to_json = json.loads(json_util.dumps(send_json))
+    return send_to_json
+
+@app.route('/api/all_surgerys')
+def all_surgerys():
+    all_surgerys = []
+    for surgery in collection_surgery.find():
+        all_surgerys.append(surgery['name'])
+    send_json = {
+        "surgerys": all_surgerys
+    }
+    send_to_json = json.loads(json_util.dumps(send_json))
+    return send_to_json
+
+
 @app.route('/register/', methods=['GET','POST'])
 def register():
 
