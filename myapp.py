@@ -202,9 +202,21 @@ def api_find_post_id(post_id):
             "reply": reply_list_content
         })
 
+    like_list = post['like_list']
+    visual_like_list = []
+    users = mongo.db.users
+    for user_id in like_list:
+        user = users.find_one({'_id' : ObjectId(str(user_id)) })
+        username = user['username']
+        visual_like_list.append(username)
+    
+    like_number = post["like_number"]
+    
     send_json = {
         "post": post,
-        "comment": comment_list_content
+        "comment": comment_list_content,
+        "like_list": visual_like_list,
+        "like_number": like_number
     }
     send_to_json = json.loads(json_util.dumps(send_json))
     return send_to_json
@@ -753,6 +765,7 @@ def viewmore(post_id):
                 "num_of_reply": len(each_comment["reply_list"]),
                 "comment_id": ObjectId(str(comment))
             })
+
         return render_template('viewmore.html', post = post, comment_list = visual_comment, _id = ObjectId(str(post_id)))
     
 @app.route("/viewmore/<post_id>/<reply_name>/<comment_id>", methods = ["POST"])
@@ -895,10 +908,16 @@ def click_like(type, item_id, user_id):
     elif type == "reply":
         item = collection_post_reply.find_one({"_id": ObjectId(str(item_id)) })
 
+
     item_like_list = item["like_list"]
     item_like_number = item["like_number"]
-    item_like_list.append(user_id)
-    item_like_number += 1
+    if user_id in item_like_list:
+        item_like_list.remove(user_id)
+        item_like_number += -1
+    else:
+        item_like_list.append(user_id)
+        item_like_number += 1
+    
 
     if type == "post":
         collection_post.update_one({"_id": ObjectId(str(item_id))}, {"$set": {"like_list": item_like_list}})
@@ -914,6 +933,8 @@ def click_like(type, item_id, user_id):
     send_json['check'] = "True"
     send_to_json = json.loads(json_util.dumps(send_json))
     return send_to_json
+
+
 
 @app.route("/notification", methods = ["GET", "POST"])
 def notification():
