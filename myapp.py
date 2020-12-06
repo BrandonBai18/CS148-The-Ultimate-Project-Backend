@@ -1,10 +1,3 @@
-# myapp.py
-''' 
-    This file is based off of this tutorial: https://stackabuse.com/deploying-a-flask-application-to-heroku/ 
-    Author: Chandra Krintz, 
-    License: UCSB BSD -- see LICENSE file in this repository
-'''
-
 import os, json
 from flask import Flask, request, jsonify, make_response, render_template, redirect, url_for, session
 import pymongo
@@ -19,6 +12,7 @@ from bson.objectid import ObjectId
 import datetime
 from werkzeug.utils import secure_filename
 from flask_simple_geoip import SimpleGeoIP
+from flask_socketio import SocketIO,emit
 
 
 
@@ -29,7 +23,8 @@ app = Flask(__name__)
 app.config.from_object(__name__)
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SECRET_KEY'] = 'hospital'
-Session(app)
+socketio = SocketIO(app)
+#Session(app)
 DEBUG=True
 #uri = "mongodb://0.0.0.0:27017"
 uri = cloud_url
@@ -38,6 +33,7 @@ database_post = client['posts']
 database_hospital = client['hospital_api']
 database_surgery = client['surgery']
 collection_surgery = database_surgery["surgeries"]
+collection_surgery_comment = database_surgery["comments"]
 collection_post = database_post['posts']
 collection_post_comment = database_post['comments']
 collection_post_reply = database_post['replys']
@@ -50,6 +46,8 @@ app.config['MONGO_URI'] = 'mongodb+srv://Ab990618:Ab990618@cluster0.ztgu2.mongod
 mongo = PyMongo(app)
 app.config.update(GEOIPIFY_API_KEY='at_8XlbpnW37c6IHAEYEn94MjBY1Oe8D')
 simple_geoip = SimpleGeoIP(app)
+
+#socketio.init_app(app)
 
 
 #use this if linking to a reaact app on the same server
@@ -183,8 +181,6 @@ def api_find_post_id(post_id):
         comment_content = collection_post_comment.find_one({"_id": ObjectId(str(comment))})
         #reply_list_id = sorted(comment_content["reply_list"]["_id"] , key=lambda x: x[1])
         
-
-    
         reply_list = comment_content["reply_list"]
         reply_list_2 = []
         for item in reply_list:
@@ -748,6 +744,36 @@ def personalize_element(username,element):
                 next_page = "/personalize/" + username
                 return redirect(next_page)
 
+@app.route("/api/personalize/",methods = ['POST'])
+def api_personalize():
+    users = mongo.db.users
+    response_json = request.get_json(force = True)
+    username = response_json["username"]
+    picture = response_json['picture']
+    gender = response_json['gender']
+    birthday = response_json['birthday']
+    rela_sta = response_json['rela_sta']
+    location = response_json['location']
+    hometown = response_json['hometown']
+    school = response_json['school']
+    company = response_json['company']
+    users.update_one({"username": username},{"$set": {"picture":picture}})
+    users.update_one({"username": username},{"$set": {"gender":gender}})
+    users.update_one({"username": username},{"$set": {"birthday":birthday}})
+    users.update_one({"username": username},{"$set": {"rela_sta":rela_sta}})
+    users.update_one({"username": username},{"$set": {"location":location}})
+    users.update_one({"username": username},{"$set": {"hometown":hometown}})
+    users.update_one({"username": username},{"$set": {"school":school}})
+    users.update_one({"username": username},{"$set": {"company":company}})
+    return_json = {
+        "check": "True"
+    }
+    return_json = json.loads(json_util.dumps(return_json))
+    return return_json
+    
+
+
+
     
     
 
@@ -1158,6 +1184,90 @@ def get_location():
     #return zip_code
     return jsonify(data=geoip_data)
 
+@app.route('/api/surgery')
+def api_surgery():
+    result_list_id = []
+    result_list_content = []
+    all_post_list = []
+    for surgery in collection_surgery.find():
+        result_list_id += surgery["list"]
+
+    for post in collection_post.find():
+        all_post_list.append(post)
+    
+    all_post_list_reverse = Reverse(all_post_list)
+
+    for post in all_post_list_reverse:
+        if post["_id"] in result_list_id:
+            result_list_content.append(post)
+    
+    result_json = {
+        "surgery": result_list_content
+    }
+    send_to_json = json.loads(json_util.dumps(result_json))
+    return send_to_json
+
+@app.route("/api/surgery/<_id>", methods = ["GET"])
+def api_surgery_id(_id):
+    posts = []
+    result_surgery = collection_surgery.find_one({"_id": ObjectId(str(_id)) })
+    print(result_surgery)
+    result_surgery_list = result_surgery["list"]
+    for post in result_surgery_list:
+        posts.append(collection_post.find_one({"_id": ObjectId(str(post))}))
+    posts = Reverse(posts)
+    result_json = {
+        "surgery": result_surgery,
+        "post": posts
+    }
+    send_to_json = json.loads(json_util.dumps(result_json))
+    return send_to_json
+
+@app.route("/api/surgery/write_comment/<_id>", methods = ["POST"])
+def api_surgery_write_comment(_id):
+    response_json = request.get_json(force = True)
+    surgery = collection_surgery.find_one({"_id": ObjectId(str(_id)) })
+    surgery_safety = surgery["scores"]["safety"]
+    surgery_expense = surgery["scores"]["expense"]
+    comment_list = surgery["comment_list"]
+    comment_len = len(comment_list) + 1
+
+    safety = int(response_json["safety"])
+    expense = int(response_json["expense"])
+    content = response_json["safety"]
+    username = response_json["username"]
+
+    new_safety = (surgery_safety + safety) / (comment_len)
+    new_expense = (surgery_expense + expense) / (comment_len)
+    scores = {
+        "safety": new_safety, 
+        "expense": new_expense 
+    }
+    new_comment = {
+        "username": username,
+        "content": content,
+        "safety": safety,
+        "expense": expense
+    }
+
+    new_comment_list = comment_list
+    new_comment_list.append(new_comment)
+
+    collection_surgery.update_one({"_id": ObjectId(str(_id))},{"$set": {"scores": scores}})
+    collection_surgery.update_one({"_id": ObjectId(str(_id))},{"$set": {"comment_list": new_comment_list}})
+
+    response = {}
+    response["check"] = "True"
+    response_json = json.loads(json_util.dumps(response))
+    return response_json
+
+    
+    
+@socketio.on('my event')
+def handle_my_custom_event(json):
+      emit('my response', json, namespace='/chat')
+    
+
 def main():
     '''The threaded option for concurrent accesses, 0.0.0.0 host says listen to all network interfaces (leaving this off changes this to local (same host) only access, port is the port listened on -- this must be open in your firewall or mapped out if within a Docker container. In Heroku, the heroku runtime sets this value via the PORT environment variable (you are not allowed to hard code it) so set it from this variable and give a default value (8118) for when we execute locally.  Python will tell us if the port is in use.  Start by using a value > 8000 as these are likely to be available.
     '''
@@ -1187,10 +1297,13 @@ def main():
         FID += 1
     """
 
-    """
-    for surgery in collection_surgery.find():
-        collection_surgery.update_one({"_id": ObjectId(str(surgery['_id']))},{"$set": {"list": []}})
     
+
+    #for surgery in collection_surgery.find():
+        #collection_surgery.update_one({"_id": ObjectId(str(surgery['_id']))},{"$set": {"introduction": ""}})
+        #collection_surgery.update_one({"_id": ObjectId(str(surgery['_id']))},{"$set": {"comment_list": []}})
+    
+    """
     users = mongo.db.users
     for user in users.find():
         users.update({"username": user['username']},{"$set": {"notification": 0}})
@@ -1201,9 +1314,10 @@ def main():
     collection_post_reply.update_many({},{ "$set": {"like_number": 0} })
     """
 
-    app.run(threaded=True, host='0.0.0.0', port=localport)
+    #app.run(threaded=True, host='0.0.0.0', port=localport)
     #app.run(threaded=True, port=localport)
-
+    socketio.run(app,debug=True,host='0.0.0.0',port=localport)
+    #socketio.run(app,host='127.0.0.1', port = '8')
 if __name__ == '__main__':
     main()
 
