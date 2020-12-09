@@ -798,11 +798,11 @@ def viewmore(post_id):
     
 @app.route("/viewmore/<post_id>/<reply_name>/<comment_id>", methods = ["POST"])
 def viewmore_reply(post_id,reply_name, comment_id):
-
+    response_json = request.get_json(force = True)
     if reply_name != "no_reply":
         users = mongo.db.users
-        comment = request.form.get("comment")
-        username = session.get('username')
+        comment = response_json["comment"]
+        username = response_json['username']
         reply_id = collection_post_reply.insert_one({"content": comment, "username": username, "username_image": users.find_one({"username": username})['picture'], "reply_name": reply_name, "like_list": []}).inserted_id
         reply_comment = collection_post_comment.find_one({"_id": ObjectId(str(comment_id))})
         new_list = []
@@ -811,7 +811,7 @@ def viewmore_reply(post_id,reply_name, comment_id):
         collection_post_comment.update_one({"_id": ObjectId(str(comment_id))}, {"$set": {"reply_list": new_list}})
         #comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username, 'reply_name': reply_name})
 
-        if (session.get("username") != reply_name ):
+        if (response_json["username"] != reply_name ):
             post_author_username = reply_name
             users = mongo.db.users
             post_author = users.find_one({"username": post_author_username})
@@ -833,20 +833,23 @@ def viewmore_reply(post_id,reply_name, comment_id):
             })
             users.update_one({"username": post_author_username},{"$set": {"notification": new_notification}})
 
-        next_page = "/viewmore/" + str(post_id)
-        return redirect(next_page)
+        return_json = {
+        "check": "True"
+        }
+        return_json = json.loads(json_util.dumps(return_json))
+        return return_json
         
     else:
         users = mongo.db.users
-        comment = request.form.get("comment")
-        username = session.get('username')
+        comment = response_json["comment"]
+        username = response_json['username']
         comment_id = collection_post_comment.insert_one({"content": comment, "username": username, "username_image": users.find_one({"username": username})['picture'],"reply_list": [], "list_list": []}).inserted_id
 
         post = collection_post.find_one({"_id": ObjectId(str(post_id))})
         comment_list = post['comment_list']
         comment_list.append(comment_id)
 
-        if (session.get("username") != post["author"] ):
+        if (response_json["username"] != post["author"] ):
             post_author_username = post["author"]
             users = mongo.db.users
             post_author = users.find_one({"username": post_author_username})
@@ -868,8 +871,11 @@ def viewmore_reply(post_id,reply_name, comment_id):
 
         collection_post.update_one({"_id": ObjectId(str(post_id))},{"$set": {"comment_list": comment_list}})
 
-        next_page = "/viewmore/" + str(post_id)
-        return redirect(next_page)
+        return_json = {
+        "check": "True"
+        }
+        return_json = json.loads(json_util.dumps(return_json))
+        return return_json
 
             
 @app.route("/reply_to_comment/<comment_id>/<reply_name>", methods = ["GET", "POST"])
