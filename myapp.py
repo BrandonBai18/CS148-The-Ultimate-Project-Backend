@@ -799,7 +799,7 @@ def viewmore(post_id):
 @app.route("/viewmore/<post_id>/<reply_name>/<comment_id>", methods = ["POST"])
 def viewmore_reply(post_id,reply_name, comment_id):
     response_json = request.get_json(force = True)
-    if reply_name != "no_reply":
+    if (reply_name != "reply_comment") and (reply_name != "no_reply"):
         users = mongo.db.users
         comment = response_json["comment"]
         username = response_json['username']
@@ -838,12 +838,52 @@ def viewmore_reply(post_id,reply_name, comment_id):
         }
         return_json = json.loads(json_util.dumps(return_json))
         return return_json
-        
-    else:
+
+    if reply_name == "reply_comment":    
         users = mongo.db.users
         comment = response_json["comment"]
         username = response_json['username']
-        comment_id = collection_post_comment.insert_one({"content": comment, "username": username, "username_image": users.find_one({"username": username})['picture'],"reply_list": [], "list_list": []}).inserted_id
+        reply_id = collection_post_reply.insert_one({"content": comment, "username": username, "username_image": users.find_one({"username": username})['picture'], "reply_name": "", "like_list": []}).inserted_id
+        reply_comment = collection_post_comment.find_one({"_id": ObjectId(str(comment_id))})
+        new_list = []
+        new_list = reply_comment["reply_list"]
+        new_list.append(reply_id)
+        collection_post_comment.update_one({"_id": ObjectId(str(comment_id))}, {"$set": {"reply_list": new_list}})
+        #comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username, 'reply_name': reply_name})
+
+        if (response_json["username"] != reply_name ):
+            post_author_username = collection_post_comment.find_one({"_id": ObjectId(str(comment_id))})["username"]
+            users = mongo.db.users
+            post_author = users.find_one({"username": post_author_username})
+            post_author_notification = post_author['notification']
+            new_notification = {
+                "number": 0,
+                "list": []
+            }
+
+            new_notification["number"] = post_author_notification["number"] + 1
+            new_notification["list"] = post_author_notification["list"]
+            #new_notification["list"].append(post_id)
+            new_notification["list"].append({
+                "comment_id": comment_id,
+                "type": "reply",
+                "content": comment,
+                "username": username, 
+                "reply_name": None
+            })
+            users.update_one({"username": post_author_username},{"$set": {"notification": new_notification}})
+
+        return_json = {
+        "check": "True"
+        }
+        return_json = json.loads(json_util.dumps(return_json))
+        return return_json
+
+    if reply_name == "no_reply":
+        users = mongo.db.users
+        comment = response_json["comment"]
+        username = response_json['username']
+        comment_id = collection_post_comment.insert_one({"content": comment, "username": username, "username_image": users.find_one({"username": username})['picture'],"reply_list": [], "like_list": []}).inserted_id
 
         post = collection_post.find_one({"_id": ObjectId(str(post_id))})
         comment_list = post['comment_list']
