@@ -20,6 +20,7 @@ from flask_socketio import SocketIO,emit
 #flask-session-0.3.2
 cloud_url = "mongodb+srv://Ab990618:Ab990618@cluster0.ztgu2.mongodb.net/hospital_post?retryWrites=true&w=majority"
 app = Flask(__name__)
+
 app.config.from_object(__name__)
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SECRET_KEY'] = 'hospital'
@@ -173,19 +174,14 @@ def api_find_post_id(post_id):
     comment_list_id_2 = []
     for item in comment_list_id:
         comment_list_id_2.append(str(item))
-    #comment_list_id = sorted(comment_list_id_2, key=lambda x: x[1] , reverse=True)
     comment_list_id = Reverse(comment_list_id)
-
     comment_list_content = []
     for comment in comment_list_id:
         comment_content = collection_post_comment.find_one({"_id": ObjectId(str(comment))})
-        #reply_list_id = sorted(comment_content["reply_list"]["_id"] , key=lambda x: x[1])
-        
         reply_list = comment_content["reply_list"]
         reply_list_2 = []
         for item in reply_list:
             reply_list_2.append(str(item))
-        #reply_list_id = sorted(reply_list_2, key=lambda x: x[1] , reverse=True)
         reply_list_id = Reverse(reply_list_2)
      
         reply_list_content = []
@@ -208,6 +204,8 @@ def api_find_post_id(post_id):
     
     like_number = post["like_number"]
     
+    post["author_image"] = users.find_one({"username": post["author"]})['picture']
+
     send_json = {
         "post": post,
         "comment": comment_list_content,
@@ -292,6 +290,8 @@ def api_write():
     hospitals = response_json['hospital']
     surgerys = response_json['surgery']
 
+    users = mongo.db.users
+
     time_now = datetime.datetime.now()
     date_time = time_now.strftime("%m/%d/%Y")
     #login_username = session.get('username')
@@ -300,6 +300,7 @@ def api_write():
         "text": Text,
         "image": Image,
         "author": login_username,
+        "author_image": users.find_one({"username": login_username})['picture'],
         "time": date_time,
         "comment_list": [],
         "like_list": []
@@ -788,6 +789,7 @@ def viewmore(post_id):
             visual_comment.append({
                 "content": each_comment['content'],
                 "username": each_comment["username"],
+                "username_image": each_comment["username_image"],
                 "num_of_reply": len(each_comment["reply_list"]),
                 "comment_id": ObjectId(str(comment))
             })
@@ -795,14 +797,13 @@ def viewmore(post_id):
         return render_template('viewmore.html', post = post, comment_list = visual_comment, _id = ObjectId(str(post_id)))
     
 @app.route("/viewmore/<post_id>/<reply_name>/<comment_id>", methods = ["POST"])
-def viewmore_reply(post_id, reply_name, comment_id):
-    if session.get("username") == None:
-        return "U need to sign in first"
+def viewmore_reply(post_id,reply_name, comment_id):
 
     if reply_name != "no_reply":
+        users = mongo.db.users
         comment = request.form.get("comment")
         username = session.get('username')
-        reply_id = collection_post_reply.insert_one({"content": comment, "username": username, "reply_name": reply_name, "like_list": []}).inserted_id
+        reply_id = collection_post_reply.insert_one({"content": comment, "username": username, "username_image": users.find_one({"username": username})['picture'], "reply_name": reply_name, "like_list": []}).inserted_id
         reply_comment = collection_post_comment.find_one({"_id": ObjectId(str(comment_id))})
         new_list = []
         new_list = reply_comment["reply_list"]
@@ -836,10 +837,10 @@ def viewmore_reply(post_id, reply_name, comment_id):
         return redirect(next_page)
         
     else:
-
+        users = mongo.db.users
         comment = request.form.get("comment")
         username = session.get('username')
-        comment_id = collection_post_comment.insert_one({"content": comment, "username": username, "reply_list": [], "list_list": []}).inserted_id
+        comment_id = collection_post_comment.insert_one({"content": comment, "username": username, "username_image": users.find_one({"username": username})['picture'],"reply_list": [], "list_list": []}).inserted_id
 
         post = collection_post.find_one({"_id": ObjectId(str(post_id))})
         comment_list = post['comment_list']
@@ -886,6 +887,7 @@ def reply_to_comment(comment_id, reply_name):
             })
         return render_template("reply_to_comment.html", reply_list = visual_reply_list, comment_id = comment_id)
     else:
+        users = mongo.db.users
         comment = request.form.get("reply")
         username = session.get('username')
         reply_id = collection_post_reply.insert_one({"content": comment, "username": username, "reply_name": reply_name, "like_list": []}).inserted_id
@@ -1125,10 +1127,12 @@ def api_viewmore_hospital(name):
         send_to_json = json.loads(json_util.dumps(hospital))
         return send_to_json
     else:
+        users = mongo.db.users
         response_json = request.get_json(force = True)
         comment = response_json["comment"]
         username = response_json['username']
-        just_inserted_id = collection_hospital_comment.insert_one({"content": comment, "username": username}).inserted_id
+        username_image = users.find_one({"username": username})["picture"]
+        just_inserted_id = collection_hospital_comment.insert_one({"content": comment, "username": username, "username_image": username_image}).inserted_id
         hospital = collection_hospital.find_one({"name": name})
         comment_list = hospital['comment_list']
         comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username})
@@ -1303,8 +1307,17 @@ def main():
         #collection_surgery.update_one({"_id": ObjectId(str(surgery['_id']))},{"$set": {"introduction": ""}})
         #collection_surgery.update_one({"_id": ObjectId(str(surgery['_id']))},{"$set": {"comment_list": []}})
     
+    #users = mongo.db.users
+    #for post in collection_post.find():
+    #    post["author_image"] = users.find_one({"username": post["author"]})['picture']
+    #    collection_post.update_one({"_id": ObjectId(str(post["_id"]))},{"$set":{"author_image": users.find_one({"username": post["author"]})['picture']}})
+    #collection_post.update_many({}, {"$set": {"author_image": post["author_image"] = users.find_one({"username": post["author"]})['picture']} })
+    #collection_post_comment.update_many({}, {"$set": {"username_image": post["author_image"] = users.find_one({"username": post["author"]})['picture']} })
+    #collection_post_reply.update_many({}, {"$set": {"username_image": post["author_image"] = users.find_one({"username": post["author"]})['picture']} })
+
+    
+    
     """
-    users = mongo.db.users
     for user in users.find():
         users.update({"username": user['username']},{"$set": {"notification": 0}})
     """
@@ -1314,9 +1327,11 @@ def main():
     collection_post_reply.update_many({},{ "$set": {"like_number": 0} })
     """
 
+
+
     #app.run(threaded=True, host='0.0.0.0', port=localport)
     #app.run(threaded=True, port=localport)
-    socketio.run(app,debug=True,host='0.0.0.0',port=localport)
+    socketio.run(app, host='0.0.0.0',port=localport)
     #socketio.run(app,host='127.0.0.1', port = '8')
 if __name__ == '__main__':
     main()
