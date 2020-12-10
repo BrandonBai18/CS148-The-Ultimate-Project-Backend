@@ -22,3 +22,16 @@ flask-socketio==4.3.2
 python-engineio==3.14.2 
 python-socketio==4.6.1
 gevent-websocket==0.10.1
+Quotation==0.0.1 
+bs4==0.0.1 
+cssselect==1.1.0 
+easyquotation==0.7.4 
+easyutils==0.1.7 
+falcon==2.0.0 
+hug==2.6.1 
+pyquery==1.4.3 
+simplejson==3.17.2 
+tushare==1.2.62 
+websocket-client==0.57.0
+module==0.0.4
+redis==3.5.3

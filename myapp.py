@@ -496,24 +496,8 @@ def logout():
     return redirect('/mainpage')
 
 
-@app.route("/api/logout")
-def api_logout():
-    session['username'] = None
 
-@app.route("/api/check_status")
-def api_check_status():
-    send_json = {}
-    if not session.get("username") is None:
-        send_json['check'] = session.get("username")
-        send_to_json = json.loads(json_util.dumps(send_json))
-        print("already login -----------")
-        return send_to_json
-    else: 
-        send_json['check'] = None
-        send_to_json = json.loads(json_util.dumps(send_json))
-        print("not login -----------")
-        return send_to_json
-
+"""
 @app.route("/id/<username>")
 def other_user_page(username):
 
@@ -538,7 +522,9 @@ def other_user_page(username):
     elif not (username in login_user["following"]["list"]) and (username in login_user["follower"]["list"]) :
         check_follow = 3
     return render_template('other_user_page.html', username = username, post_database = posts, user = user, check_follow = check_follow)
+"""
 
+"""
 @app.route("/api/id/<username>")
 def api_other_user_page(username):
     posts = collection_post.find({"author": username})
@@ -550,7 +536,9 @@ def api_other_user_page(username):
     response["posts"] = posts
     page_sanitized = json.loads(json_util.dumps(response))
     return page_sanitized
-    
+"""
+
+"""
 @app.route("/id_profile/<username>")
 def login_user_page(username):
     if not session.get("username") is None:
@@ -558,7 +546,7 @@ def login_user_page(username):
         login_user = users.find_one({'username' : session.get('username')})
         posts = collection_post.find({"author": login_user['username']})
         return render_template('login_user_page.html', user = login_user, post = posts)
-        
+"""
 
 @app.route("/api/id_profile/<username>")
 def api_login_user_page(username):
@@ -566,7 +554,11 @@ def api_login_user_page(username):
     users = mongo.db.users
     #login_user = users.find_one({'username' : session.get('username')})
     login_user = users.find_one({'username' : username})
-    posts = collection_post.find({"author": login_user['username']})
+    #posts = collection_post.find({"author": login_user['username']})
+    posts = []
+    for post in collection_post.find({"author": login_user['username']}):
+        posts.append(post)
+    post = Reverse(posts)
     response = {}
     response["posts"] = posts
     response["profile"] = login_user
@@ -634,19 +626,6 @@ def unfollow_user(follow_username):
     else:
         return "u need to login first"
 
-@app.route("/search_user", methods = ["GET", "POST"])
-def search_user():
-    search_name = request.form.get("username")
-    users = mongo.db.users
-    user_result = []
-    for user in users.find():
-        if search_name.lower() in user["username"].lower():
-            user_result.append(user["username"])
-    print(user_result)
-    if len(user_result) == 0:
-        return "cannot find the user"
-    else:
-        return render_template("search_user_result.html", users = user_result)
 
 @app.route("/personalize/<username>", methods = ['GET', 'POST'])
 def personalize(username):
@@ -777,7 +756,7 @@ def api_personalize():
 
     
     
-
+"""
 @app.route("/viewmore/<post_id>", methods = ["POST", "GET"])
 def viewmore(post_id):
     if request.method == "GET":
@@ -795,7 +774,7 @@ def viewmore(post_id):
             })
 
         return render_template('viewmore.html', post = post, comment_list = visual_comment, _id = ObjectId(str(post_id)))
-    
+"""
 @app.route("/viewmore/<post_id>/<reply_name>/<comment_id>", methods = ["POST"])
 def viewmore_reply(post_id,reply_name, comment_id):
     response_json = request.get_json(force = True)
@@ -1010,26 +989,21 @@ def click_like(type, item_id, user_id):
 
 
 
-@app.route("/notification", methods = ["GET", "POST"])
-def notification():
+@app.route("/api/notification/<username>", methods = ["GET", "POST"])
+def notification(username):
     users = mongo.db.users
-    login_user = users.find_one({'username' : session.get('username')})
+    login_user = users.find_one({'username' : username})
     notification = login_user["notification"]
-    if (notification['number'] == 0):
-        return "You dont have any notification"
-    else:
-        notification_list = notification["list"]
-        notification_content_list = []
-        clear_notification: {
-            "number": 0,
-            "list": []
-        }
-        users.update_one({'username' : session.get('username')},{"$set": {"notification": {"number": 0, "list": [] } }})
-        return render_template("notification.html", notification_list = notification_list)
+    users.update_one({'username' : username},{"$set": {"notification": {"number": 0, "list": [] } }})
+    return_json = {
+        "notification": notification
+    }
+    return_json = json.loads(json_util.dumps(return_json))
+    return return_json
 
 
 
-
+"""
 @app.route("/api/viewmore/<post_id>")
 def api_viewmore(post_id):
     post = collection_post.find_one({"_id": ObjectId(str(post_id))})
@@ -1039,10 +1013,9 @@ def api_viewmore(post_id):
     response["post"] = post
     response_json = json.loads(json_util.dumps(response))
     return response_json
+"""
 
-
-
-
+"""
 @app.route("/hospital/<element>", methods = ["GET", "POST"])
 def hospital(element):
     if request.method == "GET":
@@ -1163,68 +1136,40 @@ def viewmore_hospital(name):
             collection_hospital.update_one({"name": name},{"$set": {"comment_list": comment_list}})
             next_page = "/viewmore/hospital/" + name
             return redirect(next_page)
+"""
 
 
-@app.route("/api/viewmore/hospital/<name>", methods = ["GET", "POST"])
-def api_viewmore_hospital(name):
-    if request.method == "GET":
-        hospital = collection_hospital.find_one({'name': name.upper()})
-        #print(hospital)
-        send_to_json = json.loads(json_util.dumps(hospital))
-        return send_to_json
-    else:
-        users = mongo.db.users
-        response_json = request.get_json(force = True)
-        comment = response_json["comment"]
-        username = response_json['username']
-        username_image = users.find_one({"username": username})["picture"]
-        just_inserted_id = collection_hospital_comment.insert_one({"content": comment, "username": username, "username_image": username_image}).inserted_id
-        hospital = collection_hospital.find_one({"name": name})
-        comment_list = hospital['comment_list']
-        comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username})
-        collection_hospital.update_one({"name": name},{"$set": {"comment_list": comment_list}})
 
-        hospital = collection_hospital.find_one({'name': name.upper()})
-        send_to_json = json.loads(json_util.dumps(hospital))
-        return send_to_json
-        
-
-
-@app.route("/surgery", methods = ["GET", "POST"])
-def surgery():
-    return render_template("surgery.html")
-
-@app.route("/surgery/<name>", methods = ["GET"])
-def surgery_name(name):
-    posts = []
-    result_surgery = collection_surgery.find_one({"name": name})
-    result_surgery_list = result_surgery["list"]
-    for post in result_surgery_list:
-        posts.append(collection_post.find_one({"_id": post}))
-    return render_template('surgery_viewmore.html', name = result_surgery["name"], posts = posts)
-
-@app.route("/following_post")
-def following_post():
+@app.route("/api/following_post/<username>")
+def api_following_post(username):
     users = mongo.db.users
-    login_username = session.get("username")
-    login_user = users.find_one({"username": login_username})
+    login_user = users.find_one({"username": username})
     following_post = []
-    for following in login_user["following"]["list"]:
-        for posts in collection_post.find({"author": following}):
-            following_post.append(posts)
-    return render_template("following_post.html", posts = following_post)
+    for post in collection_post.find():
+        if post["author"] in login_user["following"]["list"]:
+            following_post.append(post)
+    following_post = Reverse(following_post)
+    return_json = {
+        "post": following_post
+    }
+    return_json = json.loads(json_util.dumps(return_json))
+    return return_json
+            
     
-@app.route("/friend_post")
-def friend_post():
+@app.route("/api/friend_post/<username>")
+def api_friend_post(username):
     users = mongo.db.users
-    login_username = session.get("username")
-    login_user = users.find_one({"username": login_username})
-    friend_post = []
-    for following in login_user["following"]["list"]:
-        if following in login_user["follower"]["list"]:
-            for posts in collection_post.find({"author": following}):
-                friend_post.append(posts)
-    return render_template("following_post.html", posts = friend_post)
+    login_user = users.find_one({"username": username})
+    following_post = []
+    for post in collection_post.find():
+        if (post["author"] in login_user["following"]["list"]) and (post["author"] in login_user["follower"]["list"]) :
+            following_post.append(post)
+    following_post = Reverse(following_post)
+    return_json = {
+        "post": following_post
+    }
+    return_json = json.loads(json_util.dumps(return_json))
+    return return_json
 
 @app.route('/get_location/hospital')
 def get_location():
@@ -1234,8 +1179,88 @@ def get_location():
     #return zip_code
     return jsonify(data=geoip_data)
 
-@app.route('/api/surgery')
-def api_surgery():
+@app.route("/api/hospital/write_comment/<_id>", methods = ["POST"])
+def api_hospital_write_comment(_id):
+    users = mongo.db.users
+    response_json = request.get_json(force = True)
+    hospital = collection_hospital.find_one({"_id": ObjectId(str(_id)) })
+    hospital_safety = hospital["scores"]["safety"]
+    hospital_expense = hospital["scores"]["expense"]
+    hospital_service = hospital["scores"]["service"]
+    hospital_overall = hospital["scores"]["overall"]
+
+    safety = int(response_json["safety"])
+    expense = int(response_json["expense"])
+    service = int(response_json["service"])
+    overall = int(response_json["overall"])
+
+    comment_list = hospital["comment_list"]
+    comment_len = len(comment_list) + 1
+    content = response_json["content"]
+    username = response_json["username"]
+
+    new_safety = (hospital_safety + safety) / (comment_len)
+    new_expense = (hospital_expense + expense) / (comment_len)
+    new_service = (hospital_service + service) / (comment_len)
+    new_overall = (hospital_overall + overall) / (comment_len)
+    scores = {
+        "safety": new_safety, 
+        "expense": new_expense,
+        "service": new_service, 
+        "overall": new_overall 
+    }
+    new_comment = {
+        "username": username,
+        "username_image": users.find_one({"username": username})['picture'],
+        "content": content,
+        "safety": safety,
+        "expense": expense,
+        "service": service,
+        "overall": overall
+    }
+    
+    comment_insert_id = collection_hospital_comment.insert_one(new_comment).inserted_id
+    comment_list.append(comment_insert_id)
+    collection_hospital.update_one({"_id": ObjectId(str(_id))},{"$set": {"scores": scores}})
+    collection_hospital.update_one({"_id": ObjectId(str(_id))},{"$set": {"comment_list": comment_list}})
+
+    response = {}
+    response["check"] = "True"
+    response_json = json.loads(json_util.dumps(response))
+    return response_json
+
+@app.route("/api/hospital/mainpage/<_id>", methods = ["GET"])
+def api_hospital_mainpage_id(_id):
+    hospital = collection_hospital.find_one({'_id': ObjectId(str(_id)) })
+    send_to_json = json.loads(json_util.dumps(hospital))
+    return send_to_json
+
+@app.route("/api/hospital/viewmore/<_id>", methods = ["GET"])
+def api_hospital_viewmore_id(_id):
+    hospital = collection_hospital.find_one({"_id": ObjectId(str(_id))})
+
+    comments = []
+    for each_comment in hospital["comment_list"]:
+        comments.append(collection_hospital_comment.find_one({"_id": ObjectId(str(each_comment)) }) )
+    comments = Reverse(comments)
+
+    posts = []
+    result_surgery_list = hospital["post_list"]
+    for post in result_surgery_list:
+        posts.append(collection_post.find_one({"_id": ObjectId(str(post))}))
+    posts = Reverse(posts)
+
+    result_json = {
+        "hospital": hospital,
+        "post": posts,
+        "comment": comments
+    }
+    send_to_json = json.loads(json_util.dumps(result_json))
+    return send_to_json
+
+"""
+@app.route('/api/surgery/haha')
+def api_surgery_haha():
     result_list_id = []
     result_list_content = []
     all_post_list = []
@@ -1256,25 +1281,11 @@ def api_surgery():
     }
     send_to_json = json.loads(json_util.dumps(result_json))
     return send_to_json
-
-@app.route("/api/surgery/<_id>", methods = ["GET"])
-def api_surgery_id(_id):
-    posts = []
-    result_surgery = collection_surgery.find_one({"_id": ObjectId(str(_id)) })
-    print(result_surgery)
-    result_surgery_list = result_surgery["list"]
-    for post in result_surgery_list:
-        posts.append(collection_post.find_one({"_id": ObjectId(str(post))}))
-    posts = Reverse(posts)
-    result_json = {
-        "surgery": result_surgery,
-        "post": posts
-    }
-    send_to_json = json.loads(json_util.dumps(result_json))
-    return send_to_json
+"""
 
 @app.route("/api/surgery/write_comment/<_id>", methods = ["POST"])
 def api_surgery_write_comment(_id):
+    users = mongo.db.users
     response_json = request.get_json(force = True)
     surgery = collection_surgery.find_one({"_id": ObjectId(str(_id)) })
     surgery_safety = surgery["scores"]["safety"]
@@ -1284,7 +1295,7 @@ def api_surgery_write_comment(_id):
 
     safety = int(response_json["safety"])
     expense = int(response_json["expense"])
-    content = response_json["safety"]
+    content = response_json["content"]
     username = response_json["username"]
 
     new_safety = (surgery_safety + safety) / (comment_len)
@@ -1295,23 +1306,111 @@ def api_surgery_write_comment(_id):
     }
     new_comment = {
         "username": username,
+        "username_image": users.find_one({"username": username})['picture'],
         "content": content,
         "safety": safety,
         "expense": expense
     }
-
-    new_comment_list = comment_list
-    new_comment_list.append(new_comment)
-
+    
+    comment_insert_id = collection_surgery_comment.insert_one(new_comment).inserted_id
+    comment_list.append(comment_insert_id)
     collection_surgery.update_one({"_id": ObjectId(str(_id))},{"$set": {"scores": scores}})
-    collection_surgery.update_one({"_id": ObjectId(str(_id))},{"$set": {"comment_list": new_comment_list}})
+    collection_surgery.update_one({"_id": ObjectId(str(_id))},{"$set": {"comment_list": comment_list}})
 
     response = {}
     response["check"] = "True"
     response_json = json.loads(json_util.dumps(response))
     return response_json
 
+@app.route("/api/surgery/mainpage/<_id>", methods = ["GET"])
+def api_surgery_mainpage_id(_id):
+    posts = []
+    result_surgery = collection_surgery.find_one({"_id": ObjectId(str(_id)) })
+
+    surgery_comment = []
+    for each_comment in result_surgery["comment_list"]:
+        surgery_comment.append(collection_surgery_comment.find_one({"_id": ObjectId(str(each_comment)) }) )
+    surgery_comment = Reverse(surgery_comment)
+    result_json = {
+        "surgery": result_surgery,
+        "comment": surgery_comment
+    }
+    send_to_json = json.loads(json_util.dumps(result_json))
+    return send_to_json
+
+@app.route("/api/surgery/viewmore/<_id>", methods = ["GET"])
+def api_surgery_viewmore_id(_id):
+    surgery = collection_surgery.find_one({"_id": ObjectId(str(_id))})
+
+    surgery_comment = []
+    for each_comment in surgery["comment_list"]:
+        surgery_comment.append(collection_surgery_comment.find_one({"_id": ObjectId(str(each_comment)) }) )
+    surgery_comment = Reverse(surgery_comment)
+
+    posts = []
+    result_surgery_list = surgery["list"]
+    for post in result_surgery_list:
+        posts.append(collection_post.find_one({"_id": ObjectId(str(post))}))
+    posts = Reverse(posts)
+
+    result_json = {
+        "surgery": surgery,
+        "post": posts,
+        "comment": surgery_comment
+    }
+    send_to_json = json.loads(json_util.dumps(result_json))
+    return send_to_json
+
+@app.route("/api/search", methods = ["POST"])
+def api_search():
+    response_json = request.get_json(force = True)
+    key_type = response_json['type']
+    key_word = response_json["key_word"]
+    return_list = []
+
+    if key_type == "user":
+        users = mongo.db.users
+        for user in users.find():
+            if key_word.lower() in user["username"].lower():
+                return_list.append(user)
+        
+    elif key_type == "hospital":
+        for hospital in collection_hospital.find():
+            if key_word.lower() in hospital["name"].lower():
+                return_list.append(hospital)
+            
+
+    elif key_type == "surgery":
+        for surgery in collection_surgery.find():
+            if key_word.lower() in surgery["name"].lower():
+                return_list.append(surgery)
+
+    elif key_type == "post":
+        for post in collection_post.find():
+            if ( key_word.lower() in post["title"].lower() ) or ( key_word.lower() in post["text"].lower() ):
+                return_list.append(post)
+
+    return_list = Reverse(return_list)
+
+    return_json = {
+        "list": return_list
+    }
+    return_json = json.loads(json_util.dumps(return_json))
+    return return_json
     
+    
+@app.route("/api/hospital", methods = ["GET"])
+def api_hospital():
+    hospitals = []
+    for hospital in collection_hospital.find():
+        if hospital["scores"]["expense"] > 0:
+            hospitals.append(hospital)
+
+    result_json = {
+        "hospital": hospitals
+    }
+    send_to_json = json.loads(json_util.dumps(result_json))
+    return send_to_json
     
 @socketio.on('my event')
 def handle_my_custom_event(json):
@@ -1345,6 +1444,16 @@ def main():
         collection_hospital.update_one({"_id": ObjectId(str(hospital['_id'])) },{"$set": {"post_list": [] }})
         print(FID)
         FID += 1
+    """
+    """
+    collection_hospital.update_many({},{"$set": {"comment_list": []}})
+    collection_hospital.update_many({},{"$set": {"post_list": []}})
+    collection_hospital.update_many({},{"$set": {"scores": {
+        "safety": 0, 
+        "expense": 0,
+        "service": 0, 
+        "overall": 0 
+    }}})
     """
 
     
