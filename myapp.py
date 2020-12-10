@@ -417,6 +417,7 @@ def api_register():
             hashpass = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
             users.insert({
                 'username' : username, 
+                'introduction': None,
                 'password' : hashpass,
                 'picture': "https://cdn5.vectorstock.com/i/thumb-large/82/59/anonymous-user-flat-icon-vector-18958259.jpg",
                 'gender': None,
@@ -730,6 +731,7 @@ def api_personalize():
     users = mongo.db.users
     response_json = request.get_json(force = True)
     username = response_json["username"]
+    introduction = response_json['introduction']
     picture = response_json['picture']
     gender = response_json['gender']
     birthday = response_json['birthday']
@@ -738,6 +740,7 @@ def api_personalize():
     hometown = response_json['hometown']
     school = response_json['school']
     company = response_json['company']
+    users.update_one({"username": username},{"$set": {"introduction":introduction}})
     users.update_one({"username": username},{"$set": {"picture":picture}})
     users.update_one({"username": username},{"$set": {"gender":gender}})
     users.update_one({"username": username},{"$set": {"birthday":birthday}})
@@ -755,7 +758,20 @@ def api_personalize():
 
 
 
-    
+@app.route("/api/check_status")
+def api_check_status():
+    send_json = {}
+    if not session.get("username") is None:
+        send_json['check'] = session.get("username")
+        send_to_json = json.loads(json_util.dumps(send_json))
+        print("already login -----------")
+        return send_to_json
+    else: 
+        send_json['check'] = None
+        send_to_json = json.loads(json_util.dumps(send_json))
+        print("not login -----------")
+        return send_to_json
+
     
 """
 @app.route("/viewmore/<post_id>", methods = ["POST", "GET"])
