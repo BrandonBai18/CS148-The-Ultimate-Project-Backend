@@ -178,21 +178,22 @@ def api_find_post_id(post_id):
     comment_list_content = []
     for comment in comment_list_id:
         comment_content = collection_post_comment.find_one({"_id": ObjectId(str(comment))})
-        reply_list = comment_content["reply_list"]
-        reply_list_2 = []
-        for item in reply_list:
-            reply_list_2.append(str(item))
-        reply_list_id = Reverse(reply_list_2)
-     
-        reply_list_content = []
-        for reply in reply_list_id:
-            reply_content = collection_post_reply.find_one({"_id": ObjectId(str(reply))})
-            reply_list_content.append(reply_content)
+        if comment_content:
+            reply_list = comment_content["reply_list"]
+            reply_list_2 = []
+            for item in reply_list:
+                reply_list_2.append(str(item))
+            reply_list_id = Reverse(reply_list_2)
         
-        comment_list_content.append({
-            "content":comment_content,
-            "reply": reply_list_content
-        })
+            reply_list_content = []
+            for reply in reply_list_id:
+                reply_content = collection_post_reply.find_one({"_id": ObjectId(str(reply))})
+                reply_list_content.append(reply_content)
+            
+            comment_list_content.append({
+                "content":comment_content,
+                "reply": reply_list_content
+            })
 
     like_list = post['like_list']
     visual_like_list = []
