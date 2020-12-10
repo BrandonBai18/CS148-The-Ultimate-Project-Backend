@@ -782,6 +782,7 @@ def api_comment_reply(post_id):
     comment = response_json["comment"]
     username = response_json['username']
     judge_id = response_json["reply_id"]
+    second_comment_id = response_json["comment_id"]
     reply_name = response_json["reply_name"]
     if collection_post_comment.find_one({"_id": ObjectId(str(judge_id))}):
         reply_type = "comment"
@@ -793,9 +794,12 @@ def api_comment_reply(post_id):
     comment_id = judge_id
 
     if reply_type == "reply":    
-        collection_post_reply.insert_one({"content": comment, "username": username, "username_image": users.find_one({"username": username})['picture'], "reply_name": reply_name, "like_list": []})
-
+        new_id = collection_post_reply.insert_one({"content": comment, "username": username, "username_image": users.find_one({"username": username})['picture'], "reply_name": reply_name, "like_list": [], "comment_id": second_comment_id}).inserted_id
+        reply_comment = collection_post_comment.find_one({"_id": ObjectId(str(second_comment_id))})
         #comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username, 'reply_name': reply_name})
+        new_list = reply_comment["reply_list"]
+        new_list.append(new_id)
+        collection_post_comment.update_one({"_id": ObjectId(str(second_comment_id))}, {"$set": {"reply_list": new_list}})
 
         if (response_json["username"] != reply_name ):
             post_author_username = reply_name
@@ -820,7 +824,7 @@ def api_comment_reply(post_id):
             users.update_one({"username": post_author_username},{"$set": {"notification": new_notification}})
 
     if reply_type == "comment":       
-        reply_id = collection_post_reply.insert_one({"content": comment, "username": username, "username_image": users.find_one({"username": username})['picture'], "reply_name": "", "like_list": []}).inserted_id
+        reply_id = collection_post_reply.insert_one({"content": comment, "username": username, "username_image": users.find_one({"username": username})['picture'], "reply_name": "", "like_list": [], "comment_id":second_comment_id}).inserted_id
         reply_comment = collection_post_comment.find_one({"_id": ObjectId(str(comment_id))})
         new_list = []
         new_list = reply_comment["reply_list"]
@@ -883,7 +887,8 @@ def api_comment_reply(post_id):
 
     return_json = {
         "check": "True",
-        "reply_type": reply_type
+        "reply_type": reply_type,
+        "comment_id": second_comment_id
     }
     return_json = json.loads(json_util.dumps(return_json))
     return return_json
