@@ -202,7 +202,7 @@ def api_find_post_id(post_id):
         username = user['username']
         visual_like_list.append(username)
     
-    like_number = post["like_number"]
+    like_number = len(post["like_list"])
     
     post["author_image"] = users.find_one({"username": post["author"]})['picture']
 
@@ -1471,11 +1471,11 @@ def main():
     for user in users.find():
         users.update({"username": user['username']},{"$set": {"notification": 0}})
     """
-    """
-    collection_post.update_many({},{ "$set": {"like_number": 0} })
-    collection_post_comment.update_many({},{ "$set": {"like_number": 0} })
-    collection_post_reply.update_many({},{ "$set": {"like_number": 0} })
-    """
+    
+    collection_surgery.update_many({},{ "$set": {"list": []} })
+    collection_surgery.update_many({},{ "$set": {"comment_list": []} })
+    collection_surgery.update_many({},{ "$set": {"scores": {"safety":0, "expense":0 }} })
+    
 
 
 
