@@ -1275,10 +1275,10 @@ def api_hospital_write_comment(_id):
     content = response_json["content"]
     username = response_json["username"]
 
-    new_safety = (hospital_safety + safety) / (comment_len)
-    new_expense = (hospital_expense + expense) / (comment_len)
-    new_service = (hospital_service + service) / (comment_len)
-    new_overall = (hospital_overall + overall) / (comment_len)
+    new_safety = (hospital_safety * len(comment_list) + safety) / (comment_len)
+    new_expense = (hospital_expense * len(comment_list) + expense) / (comment_len)
+    new_service = (hospital_service * len(comment_list)+ service) / (comment_len)
+    new_overall = (hospital_overall * len(comment_list) + overall) / (comment_len)
     scores = {
         "safety": new_safety, 
         "expense": new_expense,
@@ -1374,8 +1374,8 @@ def api_surgery_write_comment(_id):
     content = response_json["content"]
     username = response_json["username"]
 
-    new_safety = (surgery_safety + safety) / (comment_len)
-    new_expense = (surgery_expense + expense) / (comment_len)
+    new_safety = (surgery_safety * len(comment_list) + safety) / (comment_len)
+    new_expense = (surgery_expense * len(comment_list) + expense) / (comment_len)
     scores = {
         "safety": new_safety, 
         "expense": new_expense 
