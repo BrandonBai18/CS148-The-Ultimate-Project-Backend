@@ -567,66 +567,102 @@ def api_login_user_page(username):
     page_sanitized = json.loads(json_util.dumps(response))
     return page_sanitized
 
-@app.route("/follow/<follow_username>")
-def follow_user(follow_username):
-    if not session.get("username") is None:
-        users = mongo.db.users
-        login_user = users.find_one({'username' : session.get('username')})
-        follow_user = users.find_one({'username' : follow_username})
-        login_user_following = login_user['following']
-        follow_user_follower = follow_user['follower']
+@app.route("/api/other_profile/<login_username>/<other_username>")
+def api_other_profile_login_user_other_user(login_username, other_username):
+    users = mongo.db.users
+    login_user = users.find_one({'username' : login_username})
+    other_user = users.find_one({'username' : other_username})
 
-        if session.get("username") in follow_user_follower['list']:
-            return "u already followed him"
+    posts = []
+    for post in collection_post.find({"author": login_user['username']}):
+        posts.append(post)
+    post = Reverse(posts)
+    response = {}
+    response["posts"] = posts
+    response["profile"] = other_user
 
-        login_user_following['number'] += 1
-        login_user_following['list'].append(follow_user["username"])
-        follow_user_follower['number'] += 1
-        follow_user_follower['list'].append(login_user['username'])
-        users.update_one({"username": follow_user["username"]},{"$set":{"follower": follow_user_follower}})
-        users.update_one({"username": login_user['username']},{"$set":{"following": login_user_following}})
-
-        new_notification = {
-                "number": 0,
-                "list": []
-            }
-        post_author_notification = follow_user['notification']
-        new_notification["number"] = post_author_notification["number"] + 1
-        new_notification["list"] = post_author_notification["list"]
-        new_notification["list"].append({
-                "comment_id": 0,
-                "type": "follow",
-                "content": 0,
-                "username": session.get("username"), 
-                "reply_name": 0
-            })
-        users.update_one({"username": follow_username},{"$set": {"notification": new_notification}})
+    if not (other_username in login_user["following"]["list"]) and not (other_username in login_user["follower"]["list"]):
+        follow_status = 0
+        #stranger
+    if (other_username in login_user["following"]["list"]) and not (other_username in login_user["follower"]["list"]):
+        follow_status = 1
+        #i follow him
+    if not (other_username in login_user["following"]["list"]) and (other_username in login_user["follower"]["list"]):
+        follow_status = 2
+        #he follows me
+    if (other_username in login_user["following"]["list"]) and (other_username in login_user["follower"]["list"]):
+        follow_status = 3
+        #double follow
 
 
 
-        url = "/id/" + follow_username
-        return redirect(url)
-    else:
-        return "u need to login first"
 
-@app.route("/unfollow/<follow_username>")
-def unfollow_user(follow_username):
-    if not session.get("username") is None:
-        users = mongo.db.users
-        login_user = users.find_one({'username' : session.get('username')})
-        follow_user = users.find_one({'username' : follow_username})
-        login_user_following = login_user['following']
-        follow_user_follower = follow_user['follower']
-        login_user_following['number'] += -1
-        login_user_following['list'].remove(follow_user["username"])
-        follow_user_follower['number'] += -1
-        follow_user_follower['list'].remove(login_user['username'])
-        users.update_one({"username": follow_user["username"]},{"$set":{"follower": follow_user_follower}})
-        users.update_one({"username": login_user['username']},{"$set":{"following": login_user_following}})
-        url = "/id/" + follow_username
-        return redirect(url)
-    else:
-        return "u need to login first"
+    response["follow_status"] = follow_status
+    page_sanitized = json.loads(json_util.dumps(response))
+    return page_sanitized
+
+
+
+@app.route("/api/follow", methods = ["POST"])
+def api_follow_user():
+    response_json = request.get_json(force = True)
+    login_username = response_json['login_username']
+    other_username = response_json["other_username"]
+    users = mongo.db.users
+    login_user = users.find_one({'username' : login_username})
+    follow_user = users.find_one({'username' : other_username})
+    login_user_following = login_user['following']
+    follow_user_follower = follow_user['follower']
+
+    login_user_following['number'] += 1
+    login_user_following['list'].append(follow_user["username"])
+    follow_user_follower['number'] += 1
+    follow_user_follower['list'].append(login_user['username'])
+    users.update_one({"username": login_user['username']},{"$set":{"following": login_user_following}})
+    users.update_one({"username": follow_user["username"]},{"$set":{"follower": follow_user_follower}})
+    
+    new_notification = {
+            "number": 0,
+            "list": []
+        }
+    post_author_notification = follow_user['notification']
+    new_notification["number"] = post_author_notification["number"] + 1
+    new_notification["list"] = post_author_notification["list"]
+    new_notification["list"].append({
+            "comment_id": 0,
+            "type": "follow",
+            "content": 0,
+            "username": login_username, 
+            "reply_name": 0
+        })
+    users.update_one({"username": other_username},{"$set": {"notification": new_notification}})
+    result_json = {
+        "check": "True"
+    }
+    send_to_json = json.loads(json_util.dumps(result_json))
+    return send_to_json
+
+@app.route("/api/unfollow", methods = ["POST"])
+def api_unfollow_user():
+    users = mongo.db.users
+    response_json = request.get_json(force = True)
+    login_username = response_json['login_username']
+    other_username = response_json["other_username"]
+    login_user = users.find_one({'username' : login_username})
+    follow_user = users.find_one({'username' : other_username})
+    login_user_following = login_user['following']
+    follow_user_follower = follow_user['follower']
+    login_user_following['number'] += -1
+    login_user_following['list'].remove(follow_user["username"])
+    follow_user_follower['number'] += -1
+    follow_user_follower['list'].remove(login_user['username'])
+    users.update_one({"username": follow_user["username"]},{"$set":{"follower": follow_user_follower}})
+    users.update_one({"username": login_user['username']},{"$set":{"following": login_user_following}})
+    result_json = {
+        "check": "True"
+    }
+    send_to_json = json.loads(json_util.dumps(result_json))
+    return send_to_json
 
 
 @app.route("/personalize/<username>", methods = ['GET', 'POST'])
