@@ -643,88 +643,114 @@ def personalize(username):
     """
 
 
-@app.route("/personalize/<username>/<element>",methods = ['GET', 'POST'])
-def personalize_element(username,element):
-        users = mongo.db.users
-        login_user = users.find_one({'username' : username})
-        if element == 'gender':
-            if request.method == 'GET':
-                return render_template('gender.html', user = login_user)
-            if request.method == 'POST':
-                users.update_one({"username": username},{"$set": {"gender": request.form.get("gender")}})
-                next_page = "/personalize/" + username
-                return redirect(next_page)
+@app.route("/personalize",methods = ['POST'])
+def personalize_element():
+    users = mongo.db.users
+    response_json = request.get_json(force = True)
+    username = response_json['username']
+    element = response_json["element"]
+    word = response_json['word']
+    
+    #login_user = users.find_one({'username' : username})
+    users.update_one({"username": username},{"$set": {element: word}})
+    result_json = {
+        "check": "True"
+    }
+    send_to_json = json.loads(json_util.dumps(result_json))
+    return send_to_json
+    
 
+    """
+    if element == 'introduction':
+        if request.method == 'GET':
+            return render_template('gender.html', user = login_user)
+        if request.method == 'POST':
+            users.update_one({"username": username},{"$set": {"introduction": request.form.get("introduction")}})
+            next_page = "/personalize/" + username
+            return redirect(next_page)
+
+    if element == 'gender':
+        if request.method == 'GET':
+            return render_template('gender.html', user = login_user)
+        if request.method == 'POST':
+            users.update_one({"username": username},{"$set": {"gender": request.form.get("gender")}})
+            next_page = "/personalize/" + username
+            return redirect(next_page)
+
+    
+    if element == 'birthday':
+        if request.method == 'GET':
+            return render_template('birthday.html', user = login_user)
+        if request.method == 'POST':
+            users.update_one({"username": username},{"$set": {"birthday": request.form.get("birthday")}})
+            next_page = "/personalize/" + username
+            return redirect(next_page)
+
+    if element == 'rela_sta':
+        if request.method == 'GET':
+            return render_template('rela_sta.html', user = login_user)
+        if request.method == 'POST':
+            users.update_one({"username": username},{"$set": {"rela_sta": request.form.get("rela_sta")}})
+            next_page = "/personalize/" + username
+            return redirect(next_page)
+
+    if element == 'location':
+        if request.method == 'GET':
+            return render_template('location.html', user = login_user)
+        if request.method == 'POST':
+            users.update_one({"username": username},{"$set": {"location": request.form.get("location")}})
+            next_page = "/personalize/" + username
+            return redirect(next_page)
+
+    if element == 'hometown':
+        if request.method == 'GET':
+            return render_template('hometown.html', user = login_user)
+        if request.method == 'POST':
+            users.update_one({"username": username},{"$set": {"hometown": request.form.get("hometown")}})
+            next_page = "/personalize/" + username
+            return redirect(next_page)
+
+    if element == 'school':
+        if request.method == 'GET':
+            return render_template('school.html', user = login_user)
+        if request.method == 'POST':
+            users.update_one({"username": username},{"$set": {"school": request.form.get("school")}})
+            next_page = "/personalize/" + username
+            return redirect(next_page)
+
+    if element == 'company':
+        if request.method == 'GET':
+            return render_template('company.html', user = login_user)
+        if request.method == 'POST':
+            users.update_one({"username": username},{"$set": {"company": request.form.get("company")}})
+            next_page = "/personalize/" + username
+            return redirect(next_page)
+
+    if element == 'picture':
+        if request.method == 'GET':
+            return render_template('picture.html', user = login_user)
+        if request.method == 'POST':
         
-        if element == 'birthday':
-            if request.method == 'GET':
-                return render_template('birthday.html', user = login_user)
-            if request.method == 'POST':
-                users.update_one({"username": username},{"$set": {"birthday": request.form.get("birthday")}})
-                next_page = "/personalize/" + username
-                return redirect(next_page)
+            
+            target = os.path.join(APP_ROOT, 'user_profile_images/')  #folder path
+            if not os.path.isdir(target):
+                os.mkdir(target)     # create folder if not exits
+            #user_picture_collection = database.mongo.db.user_pictures  # database table name
+            for upload in request.files.getlist("picture"): #multiple image handel
+                filename = secure_filename(upload.filename)
+                destination = "/".join([target, filename])
+                upload.save(destination)
+                #user_picture_collection.insert({'picture': filename})   #insert into database mongo db
+                users.update_one({"username": username},{"$set": {"picture": filename}})
+            next_page = "/personalize/" + username
+            return redirect(next_page)
+            
+            
+            users.update_one({"username": username},{"$set": {"picture": request.form.get("picture")}})
+            next_page = "/personalize/" + username
+            return redirect(next_page)
+    """
 
-        if element == 'rela_sta':
-            if request.method == 'GET':
-                return render_template('rela_sta.html', user = login_user)
-            if request.method == 'POST':
-                users.update_one({"username": username},{"$set": {"rela_sta": request.form.get("rela_sta")}})
-                next_page = "/personalize/" + username
-                return redirect(next_page)
-
-        if element == 'location':
-            if request.method == 'GET':
-                return render_template('location.html', user = login_user)
-            if request.method == 'POST':
-                users.update_one({"username": username},{"$set": {"location": request.form.get("location")}})
-                next_page = "/personalize/" + username
-                return redirect(next_page)
-
-        if element == 'hometown':
-            if request.method == 'GET':
-                return render_template('hometown.html', user = login_user)
-            if request.method == 'POST':
-                users.update_one({"username": username},{"$set": {"hometown": request.form.get("hometown")}})
-                next_page = "/personalize/" + username
-                return redirect(next_page)
-
-        if element == 'school':
-            if request.method == 'GET':
-                return render_template('school.html', user = login_user)
-            if request.method == 'POST':
-                users.update_one({"username": username},{"$set": {"school": request.form.get("school")}})
-                next_page = "/personalize/" + username
-                return redirect(next_page)
-
-        if element == 'company':
-            if request.method == 'GET':
-                return render_template('company.html', user = login_user)
-            if request.method == 'POST':
-                users.update_one({"username": username},{"$set": {"company": request.form.get("company")}})
-                next_page = "/personalize/" + username
-                return redirect(next_page)
-
-        if element == 'picture':
-            if request.method == 'GET':
-                return render_template('picture.html', user = login_user)
-            if request.method == 'POST':
-                """
-                target = os.path.join(APP_ROOT, 'user_profile_images/')  #folder path
-                if not os.path.isdir(target):
-                    os.mkdir(target)     # create folder if not exits
-                #user_picture_collection = database.mongo.db.user_pictures  # database table name
-                for upload in request.files.getlist("picture"): #multiple image handel
-                    filename = secure_filename(upload.filename)
-                    destination = "/".join([target, filename])
-                    upload.save(destination)
-                    #user_picture_collection.insert({'picture': filename})   #insert into database mongo db
-                    users.update_one({"username": username},{"$set": {"picture": filename}})
-                next_page = "/personalize/" + username
-                return redirect(next_page)
-                """
-                users.update_one({"username": username},{"$set": {"picture": request.form.get("picture")}})
-                next_page = "/personalize/" + username
-                return redirect(next_page)
 
 @app.route("/api/personalize/",methods = ['POST'])
 def api_personalize():
