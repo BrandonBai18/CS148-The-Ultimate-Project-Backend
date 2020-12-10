@@ -1376,8 +1376,11 @@ def api_search():
         
     elif key_type == "hospital":
         for hospital in collection_hospital.find():
+            if len(return_list) > 20:
+                break
             if key_word.lower() in hospital["name"].lower():
                 return_list.append(hospital)
+
             
 
     elif key_type == "surgery":
