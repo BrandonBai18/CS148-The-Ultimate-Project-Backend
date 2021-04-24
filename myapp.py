@@ -238,10 +238,6 @@ def api_posts():
     if request.method == 'GET':
         posts = collection_post.find({}).sort("_id", -1)
         response = {}
-        #for post in posts:
-        #    new_num = "post_" + str(num)
-        #    response[new_num] = post
-        #    num = num + 1
         response["posts"] = posts
         response_json = json.loads(json_util.dumps(response))
         return response_json
@@ -498,58 +494,6 @@ def logout():
     return redirect('/mainpage')
 
 
-
-"""
-@app.route("/id/<username>")
-def other_user_page(username):
-
-    if session.get("username") is None:
-        return render_template('other_user_page.html', username = username, post_database = posts, user = user, check_follow = 0)
-    if username == session.get("username"):
-        return redirect("/id_profile/"+username)
-
-    posts = collection_post.find({"author": username})
-    users = mongo.db.users
-    user = users.find_one({'username' : username})
-    login_user = users.find_one({'username' : session.get("username")})
-    check_follow = 0
-
-
-    if not (username in login_user["following"]["list"]) and not (username in login_user["follower"]["list"]) :
-        check_follow = 0
-    elif (username in login_user["following"]["list"]) and not (username in login_user["follower"]["list"]) :
-        check_follow = 1
-    elif (username in login_user["following"]["list"]) and (username in login_user["follower"]["list"]) :
-        check_follow = 2
-    elif not (username in login_user["following"]["list"]) and (username in login_user["follower"]["list"]) :
-        check_follow = 3
-    return render_template('other_user_page.html', username = username, post_database = posts, user = user, check_follow = check_follow)
-"""
-
-"""
-@app.route("/api/id/<username>")
-def api_other_user_page(username):
-    posts = collection_post.find({"author": username})
-    response = {}
-    #for post in posts:
-    #    new_num = "post_" + str(num)
-    #    response[new_num] = post
-    #    num = num + 1
-    response["posts"] = posts
-    page_sanitized = json.loads(json_util.dumps(response))
-    return page_sanitized
-"""
-
-"""
-@app.route("/id_profile/<username>")
-def login_user_page(username):
-    if not session.get("username") is None:
-        users = mongo.db.users
-        login_user = users.find_one({'username' : session.get('username')})
-        posts = collection_post.find({"author": login_user['username']})
-        return render_template('login_user_page.html', user = login_user, post = posts)
-"""
-
 @app.route("/api/id_profile/<username>")
 def api_login_user_page(username):
     #if not session.get("username") is None:
@@ -696,97 +640,6 @@ def personalize_element():
     return send_to_json
     
 
-    """
-    if element == 'introduction':
-        if request.method == 'GET':
-            return render_template('gender.html', user = login_user)
-        if request.method == 'POST':
-            users.update_one({"username": username},{"$set": {"introduction": request.form.get("introduction")}})
-            next_page = "/personalize/" + username
-            return redirect(next_page)
-
-    if element == 'gender':
-        if request.method == 'GET':
-            return render_template('gender.html', user = login_user)
-        if request.method == 'POST':
-            users.update_one({"username": username},{"$set": {"gender": request.form.get("gender")}})
-            next_page = "/personalize/" + username
-            return redirect(next_page)
-
-    
-    if element == 'birthday':
-        if request.method == 'GET':
-            return render_template('birthday.html', user = login_user)
-        if request.method == 'POST':
-            users.update_one({"username": username},{"$set": {"birthday": request.form.get("birthday")}})
-            next_page = "/personalize/" + username
-            return redirect(next_page)
-
-    if element == 'rela_sta':
-        if request.method == 'GET':
-            return render_template('rela_sta.html', user = login_user)
-        if request.method == 'POST':
-            users.update_one({"username": username},{"$set": {"rela_sta": request.form.get("rela_sta")}})
-            next_page = "/personalize/" + username
-            return redirect(next_page)
-
-    if element == 'location':
-        if request.method == 'GET':
-            return render_template('location.html', user = login_user)
-        if request.method == 'POST':
-            users.update_one({"username": username},{"$set": {"location": request.form.get("location")}})
-            next_page = "/personalize/" + username
-            return redirect(next_page)
-
-    if element == 'hometown':
-        if request.method == 'GET':
-            return render_template('hometown.html', user = login_user)
-        if request.method == 'POST':
-            users.update_one({"username": username},{"$set": {"hometown": request.form.get("hometown")}})
-            next_page = "/personalize/" + username
-            return redirect(next_page)
-
-    if element == 'school':
-        if request.method == 'GET':
-            return render_template('school.html', user = login_user)
-        if request.method == 'POST':
-            users.update_one({"username": username},{"$set": {"school": request.form.get("school")}})
-            next_page = "/personalize/" + username
-            return redirect(next_page)
-
-    if element == 'company':
-        if request.method == 'GET':
-            return render_template('company.html', user = login_user)
-        if request.method == 'POST':
-            users.update_one({"username": username},{"$set": {"company": request.form.get("company")}})
-            next_page = "/personalize/" + username
-            return redirect(next_page)
-
-    if element == 'picture':
-        if request.method == 'GET':
-            return render_template('picture.html', user = login_user)
-        if request.method == 'POST':
-        
-            
-            target = os.path.join(APP_ROOT, 'user_profile_images/')  #folder path
-            if not os.path.isdir(target):
-                os.mkdir(target)     # create folder if not exits
-            #user_picture_collection = database.mongo.db.user_pictures  # database table name
-            for upload in request.files.getlist("picture"): #multiple image handel
-                filename = secure_filename(upload.filename)
-                destination = "/".join([target, filename])
-                upload.save(destination)
-                #user_picture_collection.insert({'picture': filename})   #insert into database mongo db
-                users.update_one({"username": username},{"$set": {"picture": filename}})
-            next_page = "/personalize/" + username
-            return redirect(next_page)
-            
-            
-            users.update_one({"username": username},{"$set": {"picture": request.form.get("picture")}})
-            next_page = "/personalize/" + username
-            return redirect(next_page)
-    """
-
 
 @app.route("/api/personalize/",methods = ['POST'])
 def api_personalize():
@@ -834,26 +687,7 @@ def api_check_status():
         print("not login -----------")
         return send_to_json
 
-    
-"""
-@app.route("/viewmore/<post_id>", methods = ["POST", "GET"])
-def viewmore(post_id):
-    if request.method == "GET":
-        post = collection_post.find_one({"_id": ObjectId(str(post_id))})
-        comment_list = post['comment_list']
-        visual_comment = []
-        for comment in comment_list:
-            each_comment = collection_post_comment.find_one({"_id": ObjectId(str(comment))})
-            visual_comment.append({
-                "content": each_comment['content'],
-                "username": each_comment["username"],
-                "username_image": each_comment["username_image"],
-                "num_of_reply": len(each_comment["reply_list"]),
-                "comment_id": ObjectId(str(comment))
-            })
 
-        return render_template('viewmore.html', post = post, comment_list = visual_comment, _id = ObjectId(str(post_id)))
-"""
 @app.route("/viewmore/<post_id>", methods = ["POST"])
 def api_comment_reply(post_id):
     users = mongo.db.users
@@ -1076,144 +910,6 @@ def notification(username):
     }
     return_json = json.loads(json_util.dumps(return_json))
     return return_json
-
-
-
-"""
-@app.route("/api/viewmore/<post_id>")
-def api_viewmore(post_id):
-    post = collection_post.find_one({"_id": ObjectId(str(post_id))})
-    #print(post.title)
-    response = {}
-
-    response["post"] = post
-    response_json = json.loads(json_util.dumps(response))
-    return response_json
-"""
-
-"""
-@app.route("/hospital/<element>", methods = ["GET", "POST"])
-def hospital(element):
-    if request.method == "GET":
-        return render_template('hospital.html')
-    else:
-        if element == 'zip_code':
-            return_hospitals = []
-            zip_code = request.form.get('zip_code')
-            for hospital in collection_hospital.find():
-                if zip_code == hospital['properties']['ZIP']:
-                    return_hospitals.append(hospital['properties']['NAME'])
-                    return render_template('hospital_name.html', hospitals = return_hospitals)
-            return "cannot find by zip code"
-        if element == 'name':
-            return_hospitals = []
-            name = request.form.get('name')
-            for hospital in collection_hospital.find():
-                if name.lower() in hospital['properties']['NAME'].lower():
-                    return_hospitals.append(hospital['properties']['NAME'])
-
-            if len(return_hospitals) == 0:
-                return "name not found"
-            else:
-                return render_template('hospital_name.html', hospitals = return_hospitals)
-    return "what happended?"
-
-@app.route("/api/hospital/<element>", methods = ["GET", "POST"])
-def api_hospital(element):
-    if request.method == "GET":
-        return render_template('hospital.html')
-    else:
-        response_json = request.get_json(force = True)
-        return_hospitals = { 
-                "hospital": []
-            }
-        if element == 'zip_code':
-            zip_code = response_json['element']
-            print(zip_code)
-            for hospital in collection_hospital.find():
-                if str(zip_code) == str(hospital['properties']['ZIP']):
-                    print("yes")
-                    return_hospitals["hospital"].append(hospital)
-                    send_to_json = json.loads(json_util.dumps(return_hospitals))
-                    return send_to_json
-            send_to_json = json.loads(json_util.dumps(return_hospitals))
-            return send_to_json
-        if element == 'name':
-            name = response_json['element']
-            for hospital in collection_hospital.find():
-                if name.lower() in hospital['properties']['NAME'].lower():
-                    return_hospitals["hospital"].append(hospital)
-
-            if len(return_hospitals) == 0:
-                send_to_json = json.loads(json_util.dumps(return_hospitals))
-                return send_to_json
-            else:
-                send_to_json = json.loads(json_util.dumps(return_hospitals))
-                return send_to_json
-    return "what happended?"
-
-@app.route("/hospital/viewmore/<hos_name>", methods = ["GET", "POST"])
-def hospital_viewmore(hos_name):
-    if request.method == "GET":
-        with open('Hospitals.json', 'r') as file_1:
-            data=file_1.read()
-        hos_info = json.loads(data)
-        if len(hos_name) == 5:
-            for hospital in hos_info['features']:
-                if hospital['properties']['ZIP'] == hos_name:
-                    result_hospital = hospital
-                    break
-            return render_template("hospital_viewmore.html", hospital = result_hospital)
-        else:
-            for hospital in hos_info['features']:
-                if hos_name.lower() in hospital['properties']['NAME'].lower():
-                    result_hospital = hospital
-                    break
-            return render_template("hospital_viewmore.html", hospital = result_hospital)
-    
-    else:
-        if session.get("username") == None:
-            return "U need to sign in first"
-        else:
-            comment = request.form.get("comment")
-            username = session.get('username')
-            just_inserted_id = collection_hospital_comment.insert_one({"content": comment, "username": username}).inserted_id
-
-            hospital = collection_hospital.find_one({"_id": ObjectId(str(hospital_id))})
-            comment_list = hospital['comment_list']
-            comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username})
-
-            collection_hospital.update_one({"_id": ObjectId(str(hospital_id))},{"$set": {"comment_list": comment_list}})
-            next_page = "/hospital/viewmore/" + str(hospital_id)
-            return redirect(next_page)
-            
-
-        #return str(hos_info['features'][0]['properties']['NAME'])
-
-@app.route("/viewmore/hospital/<name>", methods = ["GET", "POST"])
-def viewmore_hospital(name):
-    if request.method == "GET":
-        hospital = collection_hospital.find_one({'name': name.upper()})
-        #print(hospital)
-        comment_list = hospital['comment_list']
-        return render_template('viewmore_hospital.html', hospital = hospital, comment_list = comment_list, hospital_name = hospital['name'])
-    else:
-        if session.get("username") == None:
-            return "U need to sign in first"
-        else:
-            comment = request.form.get("comment")
-            username = session.get('username')
-            just_inserted_id = collection_hospital_comment.insert_one({"content": comment, "username": username}).inserted_id
-
-            hospital = collection_hospital.find_one({"name": name})
-            comment_list = hospital['comment_list']
-            comment_list.append({'_id':ObjectId(str(just_inserted_id)),'content': comment, 'username': username})
-
-            collection_hospital.update_one({"name": name},{"$set": {"comment_list": comment_list}})
-            next_page = "/viewmore/hospital/" + name
-            return redirect(next_page)
-"""
-
 
 
 @app.route("/api/following_post/<username>")
@@ -1505,68 +1201,11 @@ def main():
     #Session(app)
 
     localport = int(os.getenv("PORT", 8118))
-
-
-    """
-    users = mongo.db.users
-    for user in users.find():
-        users.update_one({"_id":ObjectId(str(user['_id']))},{ "$set": 
-        {'following':{
-                    'number': 0,
-                    'list': []
-                    } 
-        }})
-    """
-    """
-    FID = 1
-    for hospital in collection_hospital.find():
-        collection_hospital.update_one({"_id": ObjectId(str(hospital['_id'])) },{"$set": {"post_list": [] }})
-        print(FID)
-        FID += 1
-    """
-    """
-    collection_hospital.update_many({},{"$set": {"comment_list": []}})
-    collection_hospital.update_many({},{"$set": {"post_list": []}})
-    collection_hospital.update_many({},{"$set": {"scores": {
-        "safety": 0, 
-        "expense": 0,
-        "service": 0, 
-        "overall": 0 
-    }}})
-    """
-
-    
-
-    #for surgery in collection_surgery.find():
-        #collection_surgery.update_one({"_id": ObjectId(str(surgery['_id']))},{"$set": {"introduction": ""}})
-        #collection_surgery.update_one({"_id": ObjectId(str(surgery['_id']))},{"$set": {"comment_list": []}})
-    
-    #users = mongo.db.users
-    #for post in collection_post.find():
-    #    post["author_image"] = users.find_one({"username": post["author"]})['picture']
-    #    collection_post.update_one({"_id": ObjectId(str(post["_id"]))},{"$set":{"author_image": users.find_one({"username": post["author"]})['picture']}})
-    #collection_post.update_many({}, {"$set": {"author_image": post["author_image"] = users.find_one({"username": post["author"]})['picture']} })
-    #collection_post_comment.update_many({}, {"$set": {"username_image": post["author_image"] = users.find_one({"username": post["author"]})['picture']} })
-    #collection_post_reply.update_many({}, {"$set": {"username_image": post["author_image"] = users.find_one({"username": post["author"]})['picture']} })
-
-    
-    
-    """
-    for user in users.find():
-        users.update({"username": user['username']},{"$set": {"notification": 0}})
-    """
-    
     collection_surgery.update_many({},{ "$set": {"list": []} })
     collection_surgery.update_many({},{ "$set": {"comment_list": []} })
     collection_surgery.update_many({},{ "$set": {"scores": {"safety":0, "expense":0 }} })
-    
-
-
-
-    #app.run(threaded=True, host='0.0.0.0', port=localport)
-    #app.run(threaded=True, port=localport)
     socketio.run(app, host='0.0.0.0',port=localport)
-    #socketio.run(app,host='127.0.0.1', port = '8')
+    
 if __name__ == '__main__':
     main()
 
